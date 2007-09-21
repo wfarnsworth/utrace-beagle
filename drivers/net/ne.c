@@ -466,7 +466,10 @@ static int __init ne_probe1(struct net_device *dev, unsigned long ioaddr)
 		goto err_out;
 #endif
 	}
-
+#ifdef CONFIG_PPC_QEMU
+	/* Auto detect doesn't work for ppc qemu, for now */
+	dev->irq = 9;
+#endif
 	if (dev->irq < 2)
 	{
 		unsigned long cookie = probe_irq_on();
