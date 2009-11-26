@@ -341,7 +341,9 @@ retry:
 		printk("DEBUG_BLOCK_EXT_DEVT is enabled, you need to specify "
 		       "explicit textual name for \"root=\" boot option.\n");
 #endif
-		panic("VFS: Unable to mount root fs on %s", b);
+		printk("VFS: Unable to mount root fs on %s\n", b);
+		printk("User configuration error - no valid root filesystem found\n");
+		panic("Invalid configuration from end user prevents continuing");
 	}
 
 	printk("List of all partitions:\n");
@@ -353,7 +355,9 @@ retry:
 #ifdef CONFIG_BLOCK
 	__bdevname(ROOT_DEV, b);
 #endif
-	panic("VFS: Unable to mount root fs on %s", b);
+	printk("VFS: Unable to mount root fs on %s\n", b);
+	printk("User configuration error - no valid root filesystem found\n");
+	panic("Invalid configuration from end user prevents continuing");
 out:
 	putname(fs_names);
 }
