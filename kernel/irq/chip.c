@@ -201,11 +201,19 @@ static void default_enable(struct irq_data *data)
 	desc->status &= ~IRQ_MASKED;
 }
 
+#define IRQ_DELAYED_DISABLE    0x10000000      /* IRQ disable (masking) happens delayed. */
+
 /*
  * default disable function
  */
 static void default_disable(struct irq_data *data)
 {
+#ifdef CONFIG_PPC_QEMU
+	struct irq_desc *desc = irq_data_to_desc(irq);
+
+	if (!(desc->status & IRQ_DELAYED_DISABLE))
+		desc->chip->mask(irq);
+#endif /* CONFIG_PPC_QEMU */
 }
 
 /*
