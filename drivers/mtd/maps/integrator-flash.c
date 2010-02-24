@@ -225,13 +225,16 @@ static int armflash_probe(struct platform_device *dev)
 	if (err < 0)
 		goto cleanup;
 
+#ifdef CONFIG_MTD_PARTITIONS
 	err = parse_mtd_partitions(info->mtd, probes, &info->parts, 0);
-	if (err > 0) {
+	if (err > 0)
 		err = add_mtd_partitions(info->mtd, info->parts, err);
-		if (err)
-			printk(KERN_ERR
-			       "mtd partition registration failed: %d\n", err);
-	}
+	else if (err <= 0 && plat->parts)
+		err = add_mtd_partitions(info->mtd, plat->parts,
+			plat->nr_parts);
+	else
+#endif
+		err = add_mtd_device(info->mtd);
 
 	if (err == 0) {
 		platform_set_drvdata(dev, info);
