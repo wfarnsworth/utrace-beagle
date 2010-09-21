@@ -25,6 +25,7 @@
 #include <linux/kernel.h>
 #ifdef CONFIG_INPUT_MOUSEDEV_PSAUX
 #include <linux/miscdevice.h>
+#include <asm/byteorder.h>
 #endif
 
 MODULE_AUTHOR("Vojtech Pavlik <vojtech@ucw.cz>");
@@ -760,6 +761,11 @@ static ssize_t mousedev_read(struct file *file, char __user *buffer,
 	memcpy(data, client->ps2 + client->bufsiz - client->buffer, count);
 	client->buffer -= count;
 
+#ifdef CONFIG_CPU_BIG_ENDIAN
+	/* Force mouse data LE in userspace as consumers
+	   of the data expect it in this format */
+	cpu_to_le16p(data);
+#endif
 	spin_unlock_irq(&client->packet_lock);
 
 	if (copy_to_user(buffer, data, count))
