@@ -7,6 +7,7 @@
  *
  */
 #include <linux/mm.h>
+#include <linux/slab.h>
 #include <linux/string.h>
 
 #include <asm/mips_machine.h>
