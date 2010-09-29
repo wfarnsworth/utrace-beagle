@@ -181,6 +181,7 @@ endif
 #
 libs-$(CONFIG_ARC)		+= arch/mips/fw/arc/
 libs-$(CONFIG_CFE)		+= arch/mips/fw/cfe/
+libs-$(CONFIG_MYLOADER)		+= arch/mips/fw/myloader/
 libs-$(CONFIG_SNIPROM)		+= arch/mips/fw/sni/
 libs-y				+= arch/mips/fw/lib/
 
