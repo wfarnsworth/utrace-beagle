@@ -1111,6 +1111,11 @@ MODULE_LICENSE ("GPL");
 #define PLATFORM_DRIVER		ohci_octeon_driver
 #endif
 
+#ifdef CONFIG_USB_OHCI_AR71XX
+#include "ohci-ar71xx.c"
+#define PLATFORM_DRIVER		ohci_hcd_ar71xx_driver
+#endif
+
 #if	!defined(PCI_DRIVER) &&		\
 	!defined(PLATFORM_DRIVER) &&	\
 	!defined(OMAP1_PLATFORM_DRIVER) &&	\

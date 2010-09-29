@@ -104,6 +104,13 @@ config USB_EHCI_BIG_ENDIAN_DESC
 				    PPC_MPC512x)
 	default y
 
+config USB_EHCI_AR71XX
+	bool "USB EHCI support for AR71xx"
+	depends on USB_EHCI_HCD && ATHEROS_AR71XX
+	default y
+	help
+	  Support for Atheros AR71xx built-in EHCI controller
+
 config XPS_USB_HCD_XILINX
 	bool "Use Xilinx usb host EHCI controller core"
 	depends on USB_EHCI_HCD && (PPC32 || MICROBLAZE)
@@ -231,6 +238,13 @@ config USB_OHCI_HCD_OMAP3
 	---help---
 	  Enables support for the on-chip OHCI controller on
 	  OMAP3 and later chips.
+
+config USB_OHCI_AR71XX
+	bool "USB OHCI support for Atheros AR71xx"
+	depends on USB_OHCI_HCD && ATHEROS_AR71XX
+	default y
+	help
+	  Support for Atheros AR71xx built-in OHCI controller
 
 config USB_OHCI_HCD_PPC_SOC
 	bool "OHCI support for on-chip PPC USB controller"
