@@ -930,6 +930,13 @@ config BCM63XX_WDT
 	  To compile this driver as a loadable module, choose M here.
 	  The module will be called bcm63xx_wdt.
 
+config AR71XX_WDT
+	tristate "Atheros AR71xx Watchdog Timer"
+	depends on ATHEROS_AR71XX
+	help
+	  Hardware driver for the built-in watchdog timer on the Atheros
+	  AR71xx SoCs.
+
 # PARISC Architecture
 
 # POWERPC Architecture
