@@ -9,6 +9,8 @@ ccflags-$(CONFIG_SPI_DEBUG) := -DDEBUG
 obj-$(CONFIG_SPI_MASTER)		+= spi.o
 
 # SPI master controller drivers (bus)
+obj-$(CONFIG_SPI_AP83)			+= ap83_spi.o
+obj-$(CONFIG_SPI_AR71XX)		+= ar71xx_spi.o
 obj-$(CONFIG_SPI_ATMEL)			+= atmel_spi.o
 obj-$(CONFIG_SPI_BFIN)			+= spi_bfin5xx.o
 obj-$(CONFIG_SPI_BITBANG)		+= spi_bitbang.o
@@ -23,6 +25,7 @@ obj-$(CONFIG_SPI_EP93XX)		+= ep93xx_spi.o
 obj-$(CONFIG_SPI_GPIO)			+= spi_gpio.o
 obj-$(CONFIG_SPI_IMX)			+= spi_imx.o
 obj-$(CONFIG_SPI_LM70_LLP)		+= spi_lm70llp.o
+obj-$(CONFIG_SPI_PB44)			+= pb44_spi.o
 obj-$(CONFIG_SPI_PXA2XX)		+= pxa2xx_spi.o
 obj-$(CONFIG_SPI_OMAP_UWIRE)		+= omap_uwire.o
 obj-$(CONFIG_SPI_OMAP24XX)		+= omap2_mcspi.o
@@ -58,6 +61,7 @@ spi_s3c24xx_hw-$(CONFIG_SPI_S3C24XX_FIQ) += spi_s3c24xx_fiq.o
 
 # SPI protocol drivers (device/link on bus)
 obj-$(CONFIG_SPI_SPIDEV)	+= spidev.o
+obj-$(CONFIG_SPI_VSC7385)	+= spi_vsc7385.o
 obj-$(CONFIG_SPI_TLE62X0)	+= tle62x0.o
 # 	... add above this line ...
 
