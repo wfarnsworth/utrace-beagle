@@ -923,6 +923,16 @@ static int __devinit m25p_probe(struct spi_device *spi)
 					part_probes, &parts, 0);
 		}
 
+#ifdef CONFIG_MTD_WRT160NL_PARTS
+		if (nr_parts <= 0) {
+			static const char *part_probes[]
+					= { "wrt160nl", NULL, };
+
+			nr_parts = parse_mtd_partitions(&flash->mtd,
+					part_probes, &parts, 0);
+		}
+#endif
+
 		if (nr_parts <= 0 && data && data->parts) {
 			parts = data->parts;
 			nr_parts = data->nr_parts;

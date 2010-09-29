@@ -260,6 +260,13 @@ config MTD_BCM963XX
 	  Support for parsing CFE image tag and creating MTD partitions on
 	  Broadcom BCM63xx boards.
 
+config MTD_AR91XX_FLASH
+	tristate "Atheros AR91xx parallel flash support"
+	depends on ATHEROS_AR71XX
+	select MTD_COMPLEX_MAPPINGS
+	help
+	  Parallel flash driver for the Atheros AR91xx based boards.
+
 config MTD_DILNETPC
 	tristate "CFI Flash device mapped on DIL/Net PC"
 	depends on X86 && MTD_CONCAT && MTD_PARTITIONS && MTD_CFI_INTELEXT && BROKEN
