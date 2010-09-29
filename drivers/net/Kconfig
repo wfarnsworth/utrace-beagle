@@ -2068,6 +2068,8 @@ config ACENIC_OMIT_TIGON_I
 
 	  The safe and default value for this is N.
 
+source drivers/net/ag71xx/Kconfig
+
 config DL2K
 	tristate "DL2000/TC902x-based Gigabit Ethernet support"
 	depends on PCI

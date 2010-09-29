@@ -112,6 +112,7 @@ obj-$(CONFIG_STMMAC_ETH) += stmmac/
 # end link order section
 #
 
+obj-$(CONFIG_AG71XX) += ag71xx/
 obj-$(CONFIG_SUNDANCE) += sundance.o
 obj-$(CONFIG_HAMACHI) += hamachi.o
 obj-$(CONFIG_NET) += Space.o loopback.o
