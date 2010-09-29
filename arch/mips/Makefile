@@ -158,6 +158,13 @@ cflags-$(CONFIG_CPU_CAVIUM_OCTEON) += -Wa,-march=octeon
 endif
 cflags-$(CONFIG_CAVIUM_CN63XXP1) += -Wa,-mfix-cn63xxp1
 
+#
+# Atheros AR71xx
+#
+core-$(CONFIG_ATHEROS_AR71XX)	+= arch/mips/ar71xx/
+cflags-$(CONFIG_ATHEROS_AR71XX)	+= -I$(srctree)/arch/mips/include/asm/mach-ar71xx
+load-$(CONFIG_ATHEROS_AR71XX)	+= 0xffffffff80060000
+
 cflags-$(CONFIG_CPU_R4000_WORKAROUNDS)	+= $(call cc-option,-mfix-r4000,)
 cflags-$(CONFIG_CPU_R4400_WORKAROUNDS)	+= $(call cc-option,-mfix-r4400,)
 cflags-$(CONFIG_CPU_DADDI_WORKAROUNDS)	+= $(call cc-option,-mno-daddi,)
