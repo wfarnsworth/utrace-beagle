@@ -52,6 +52,7 @@ extern int (*perf_irq)(void);
  */
 #ifdef CONFIG_CEVT_R4K_LIB
 extern unsigned int __weak get_c0_compare_int(void);
+extern unsigned int __weak get_c0_compare_irq(void);
 extern int r4k_clockevent_init(void);
 #endif
 
