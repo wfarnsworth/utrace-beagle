@@ -320,6 +320,19 @@ static const struct net_device_ops edsa_netdev_ops = {
 	.ndo_do_ioctl		= dsa_slave_ioctl,
 };
 #endif
+#ifdef CONFIG_NET_DSA_TAG_QINQ
+static const struct net_device_ops qinq_netdev_ops = {
+	.ndo_init		= dsa_slave_init,
+	.ndo_open	 	= dsa_slave_open,
+	.ndo_stop		= dsa_slave_close,
+	.ndo_start_xmit		= qinq_xmit,
+	.ndo_change_rx_flags	= dsa_slave_change_rx_flags,
+	.ndo_set_rx_mode	= dsa_slave_set_rx_mode,
+	.ndo_set_multicast_list = dsa_slave_set_rx_mode,
+	.ndo_set_mac_address	= dsa_slave_set_mac_address,
+	.ndo_do_ioctl		= dsa_slave_ioctl,
+};
+#endif
 #ifdef CONFIG_NET_DSA_TAG_TRAILER
 static const struct net_device_ops trailer_netdev_ops = {
 	.ndo_init		= dsa_slave_init,
@@ -363,6 +376,11 @@ dsa_slave_create(struct dsa_switch *ds, struct device *parent,
 #ifdef CONFIG_NET_DSA_TAG_EDSA
 	case htons(ETH_P_EDSA):
 		slave_dev->netdev_ops = &edsa_netdev_ops;
+		break;
+#endif
+#ifdef CONFIG_NET_DSA_TAG_QINQ
+	case htons(ETH_P_QINQ):
+		slave_dev->netdev_ops = &qinq_netdev_ops;
 		break;
 #endif
 #ifdef CONFIG_NET_DSA_TAG_TRAILER

@@ -174,6 +174,9 @@ netdev_tx_t dsa_xmit(struct sk_buff *skb, struct net_device *dev);
 /* tag_edsa.c */
 netdev_tx_t edsa_xmit(struct sk_buff *skb, struct net_device *dev);
 
+/* tag_qinq.c */
+netdev_tx_t qinq_xmit(struct sk_buff *skb, struct net_device *dev);
+
 /* tag_trailer.c */
 netdev_tx_t trailer_xmit(struct sk_buff *skb, struct net_device *dev);
 

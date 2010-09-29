@@ -23,8 +23,21 @@ config NET_DSA_TAG_TRAILER
 	bool
 	default n
 
+config NET_DSA_TAG_QINQ
+	bool
+	default y
+
 
 # switch drivers
+config NET_DSA_AR7240
+	bool "Atheros AR7240 built-in ethernet switch support"
+	depends on ATHEROS_AR71XX
+	default n
+	select NET_DSA_TAG_QINQ
+	---help---
+	  This enables support for the built-in ethernet switch of the
+	  Atheros AR7240 SoC.
+
 config NET_DSA_MV88E6XXX
 	bool
 	default n
@@ -35,6 +48,13 @@ config NET_DSA_MV88E6060
 	---help---
 	  This enables support for the Marvell 88E6060 ethernet switch
 	  chip.
+
+config NET_DSA_MV88E6063
+	bool "Marvell 88E6063 ethernet switch chip support"
+	select NET_DSA_TAG_TRAILER
+	---help---
+	  This enables support for the Marvell 88E6063 ethernet switch
+	  chip
 
 config NET_DSA_MV88E6XXX_NEED_PPU
 	bool
