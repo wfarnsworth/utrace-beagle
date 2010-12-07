@@ -1,0 +1,15 @@
+links/kernel-cache/bsp/routerstationpro/Add-arch-suport-for-ar71xx.patch
+links/kernel-cache/bsp/routerstationpro/Add-include-file-support-ar71xx.patch
+links/kernel-cache/bsp/routerstationpro/Add-gpio-support-for-nxp_74hc153.patch
+links/kernel-cache/bsp/routerstationpro/Add-pci-supoprt-for-ar7xxx.patch
+links/kernel-cache/bsp/routerstationpro/Add-leds-support-for-ar71xx.patch
+links/kernel-cache/bsp/routerstationpro/Add-mtd-support-ar71xx.patch
+links/kernel-cache/bsp/routerstationpro/Add-usb-controller-support-for-ar71xx.patch
+links/kernel-cache/bsp/routerstationpro/Add-net-driver-support-ar71xx.patch
+links/kernel-cache/bsp/routerstationpro/Add-spi-support-for-ar71xx.patch
+links/kernel-cache/bsp/routerstationpro/fix-mtd-bugs-for-ar71xx.patch
+links/kernel-cache/bsp/routerstationpro/Add-myloader-support-for-ar71xx.patch
+links/kernel-cache/bsp/routerstationpro/Add-generic-support-for-mips.patch
+links/kernel-cache/bsp/routerstationpro/Get-compare_irq-from-function.patch
+links/kernel-cache/bsp/routerstationpro/Add-NET_DSA_MV88E6063-support-for-ar71xx.patch
+links/kernel-cache/bsp/routerstationpro/fix-compiling-errors.patch
