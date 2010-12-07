@@ -58,11 +58,11 @@ include/linux/version.h
 include/generated
 
 # stgit generated dirs
-patches-*
+#patches-*
 
 # quilt's files
-patches
-series
+#patches
+#series
 
 # cscope files
 cscope.*
@@ -77,3 +77,5 @@ GTAGS
 *.orig
 *~
 \#*#
+/LDAT_LINUX_PATCHES
+/meta
