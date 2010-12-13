@@ -209,10 +209,10 @@ static void default_enable(struct irq_data *data)
 static void default_disable(struct irq_data *data)
 {
 #ifdef CONFIG_PPC_QEMU
-	struct irq_desc *desc = irq_data_to_desc(irq);
+	struct irq_desc *desc = irq_data_to_desc(data);
 
 	if (!(desc->status & IRQ_DELAYED_DISABLE))
-		desc->chip->mask(irq);
+		desc->irq_data.chip->irq_mask(&desc->irq_data);
 #endif /* CONFIG_PPC_QEMU */
 }
 
