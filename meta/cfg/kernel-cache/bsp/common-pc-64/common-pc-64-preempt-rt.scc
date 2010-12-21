@@ -1,0 +1,8 @@
+define WRS_BOARD common-pc-64
+define WRS_KERNEL preempt-rt
+define WRS_ARCH x86_64
+
+scc_leaf ktypes/preempt-rt common-pc-64
+
+include bsp/common-pc-64/common-pc-64.scc
+
