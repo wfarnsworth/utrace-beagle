@@ -1,4 +1,4 @@
-kconf hardware qemu-_ppc32.cfg
+kconf hardware qemu-ppc32.cfg
 
 patch qemu.patch
 patch qemu_load_offset_hack.patch
