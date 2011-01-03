@@ -33,6 +33,10 @@ tag powerpc
 
 include features/hrt/hrt.scc
 
+include features/debugfs/debugfs.scc
+
+include features/ftrace/ftrace.scc
+
 include patches/wrs_patches.scc
 
 # #include features/ieee_float/ieee_float.scc
