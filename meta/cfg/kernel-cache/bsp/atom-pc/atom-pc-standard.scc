@@ -1,6 +1,6 @@
-define WRS_BOARD atom-pc
-define WRS_KERNEL standard
-define WRS_ARCH i386
+define KMACHINE atom-pc
+define KTYPE standard
+define KARCH i386
 
 scc_leaf bsp/common-pc/common-pc-standard atom-pc
 

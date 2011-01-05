@@ -1,6 +1,6 @@
-define WRS_BOARD arm-versatile-926ejs
-define WRS_KERNEL standard
-define WRS_ARCH arm
+define KMACHINE arm-versatile-926ejs
+define KTYPE standard
+define KARCH arm
 
 scc_leaf ktypes/standard arm-versatile-926ejs
 
