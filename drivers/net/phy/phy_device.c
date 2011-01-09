@@ -149,6 +149,19 @@ int phy_scan_fixups(struct phy_device *phydev)
 }
 EXPORT_SYMBOL(phy_scan_fixups);
 
+static int generic_receive_skb(struct sk_buff *skb)
+{
+	skb->protocol = eth_type_trans(skb, skb->dev);
+	return netif_receive_skb(skb);
+}
+
+static int generic_rx(struct sk_buff *skb)
+{
+	skb->protocol = eth_type_trans(skb, skb->dev);
+	return netif_rx(skb);
+}
+
+
 static struct phy_device* phy_device_create(struct mii_bus *bus,
 					    int addr, int phy_id)
 {
@@ -180,6 +193,8 @@ static struct phy_device* phy_device_create(struct mii_bus *bus,
 	dev_set_name(&dev->dev, PHY_ID_FMT, bus->id, addr);
 
 	dev->state = PHY_DOWN;
+	dev->netif_receive_skb = &generic_receive_skb;
+	dev->netif_rx = &generic_rx;
 
 	mutex_init(&dev->lock);
 	INIT_DELAYED_WORK(&dev->state_queue, phy_state_machine);
