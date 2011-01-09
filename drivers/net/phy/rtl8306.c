@@ -26,7 +26,7 @@
 #include <linux/delay.h>
 #include <linux/phy.h>
 
-/* #define DEBUG 1 */
+//#define DEBUG 1
 
 /* Global (PHY0) */
 #define RTL8306_REG_PAGE		16
@@ -134,8 +134,8 @@ enum rtl_regidx {
 	RTL_REG_VLAN_TAG_ONLY,
 	RTL_REG_VLAN_TAG_AWARE,
 #define RTL_VLAN_ENUM(id) \
-	(RTL_REG_VLAN##id##_VID, \
-	RTL_REG_VLAN##id##_PORTMASK)
+	RTL_REG_VLAN##id##_VID, \
+	RTL_REG_VLAN##id##_PORTMASK
 	RTL_VLAN_ENUM(0),
 	RTL_VLAN_ENUM(1),
 	RTL_VLAN_ENUM(2),
@@ -153,7 +153,7 @@ enum rtl_regidx {
 	RTL_VLAN_ENUM(14),
 	RTL_VLAN_ENUM(15),
 #define RTL_PORT_ENUM(id) \
-	(RTL_REG_PORT##id##_PVID, \
+	RTL_REG_PORT##id##_PVID, \
 	RTL_REG_PORT##id##_NULL_VID_REPLACE, \
 	RTL_REG_PORT##id##_NON_PVID_DISCARD, \
 	RTL_REG_PORT##id##_VID_INSERT, \
@@ -164,7 +164,7 @@ enum rtl_regidx {
 	RTL_REG_PORT##id##_NRESTART, \
 	RTL_REG_PORT##id##_DUPLEX, \
 	RTL_REG_PORT##id##_RXEN, \
-	RTL_REG_PORT##id##_TXEN)
+	RTL_REG_PORT##id##_TXEN
 	RTL_PORT_ENUM(0),
 	RTL_PORT_ENUM(1),
 	RTL_PORT_ENUM(2),
@@ -200,18 +200,18 @@ static const struct rtl_reg rtl_regs[] = {
 	[RTL_REG_VLAN_ENABLE]    = { 0, 0, 18,  1,  8, 1 },
 
 #define RTL_VLAN_REGS(id, phy, page, regofs) \
-	([RTL_REG_VLAN##id##_VID] = { page, phy, 25 + regofs, 12, 0, 0 }, \
-	[RTL_REG_VLAN##id##_PORTMASK] = { page, phy, 24 + regofs, 6, 0, 0 })
-	RTL_VLAN_REGS(0, 0, 0, 0),
-	RTL_VLAN_REGS(1, 1, 0, 0),
-	RTL_VLAN_REGS(2, 2, 0, 0),
-	RTL_VLAN_REGS(3, 3, 0, 0),
-	RTL_VLAN_REGS(4, 4, 0, 0),
-	RTL_VLAN_REGS(5, 0, 1, 2),
-	RTL_VLAN_REGS(6, 1, 1, 2),
-	RTL_VLAN_REGS(7, 2, 1, 2),
-	RTL_VLAN_REGS(8, 3, 1, 2),
-	RTL_VLAN_REGS(9, 4, 1, 2),
+	[RTL_REG_VLAN##id##_VID] = { page, phy, 25 + regofs, 12, 0, 0 }, \
+	[RTL_REG_VLAN##id##_PORTMASK] = { page, phy, 24 + regofs, 6, 0, 0 }
+	RTL_VLAN_REGS( 0, 0, 0, 0),
+	RTL_VLAN_REGS( 1, 1, 0, 0),
+	RTL_VLAN_REGS( 2, 2, 0, 0),
+	RTL_VLAN_REGS( 3, 3, 0, 0),
+	RTL_VLAN_REGS( 4, 4, 0, 0),
+	RTL_VLAN_REGS( 5, 0, 1, 2),
+	RTL_VLAN_REGS( 6, 1, 1, 2),
+	RTL_VLAN_REGS( 7, 2, 1, 2),
+	RTL_VLAN_REGS( 8, 3, 1, 2),
+	RTL_VLAN_REGS( 9, 4, 1, 2),
 	RTL_VLAN_REGS(10, 0, 1, 4),
 	RTL_VLAN_REGS(11, 1, 1, 4),
 	RTL_VLAN_REGS(12, 2, 1, 4),
@@ -220,7 +220,7 @@ static const struct rtl_reg rtl_regs[] = {
 	RTL_VLAN_REGS(15, 0, 1, 6),
 
 #define REG_PORT_SETTING(port, phy) \
-	([RTL_REG_PORT##port##_SPEED] = { 0, phy, 0, 1, 13, 0 }, \
+	[RTL_REG_PORT##port##_SPEED] = { 0, phy, 0, 1, 13, 0 }, \
 	[RTL_REG_PORT##port##_NWAY] = { 0, phy, 0, 1, 12, 0 }, \
 	[RTL_REG_PORT##port##_NRESTART] = { 0, phy, 0, 1, 9, 0 }, \
 	[RTL_REG_PORT##port##_DUPLEX] = { 0, phy, 0, 1, 8, 0 }, \
@@ -230,7 +230,7 @@ static const struct rtl_reg rtl_regs[] = {
 	[RTL_REG_PORT##port##_NULL_VID_REPLACE] = { 0, phy, 22, 1, 12, 0 }, \
 	[RTL_REG_PORT##port##_NON_PVID_DISCARD] = { 0, phy, 22, 1, 11, 0 }, \
 	[RTL_REG_PORT##port##_VID_INSERT] = { 0, phy, 22, 2, 9, 0 }, \
-	[RTL_REG_PORT##port##_TAG_INSERT] = { 0, phy, 22, 2, 0, 0 })
+	[RTL_REG_PORT##port##_TAG_INSERT] = { 0, phy, 22, 2, 0, 0 }
 
 	REG_PORT_SETTING(0, 0),
 	REG_PORT_SETTING(1, 1),
@@ -659,7 +659,8 @@ rtl_set_ports(struct switch_dev *dev, struct switch_val *val)
 	unsigned int oldmask;
 	int i;
 
-	for (i = 0; i < val->len; i++) {
+	for(i = 0; i < val->len; i++)
+	{
 		struct switch_port *port = &val->value.ports[i];
 		bool tagged = false;
 
@@ -878,7 +879,7 @@ rtl8306_config_init(struct phy_device *pdev)
 	chipid = rtl_get(dev, RTL_REG_CHIPID);
 	chipver = rtl_get(dev, RTL_REG_CHIPVER);
 	chiptype = rtl_get(dev, RTL_REG_CHIPTYPE);
-	switch (chiptype) {
+	switch(chiptype) {
 	case 0:
 	case 2:
 		strncpy(priv->hwname, RTL_NAME_S, sizeof(priv->hwname));

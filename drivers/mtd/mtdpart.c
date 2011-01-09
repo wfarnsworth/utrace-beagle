@@ -701,7 +701,7 @@ static int split_rootfs_data(struct mtd_info *master, struct mtd_info *rpart, co
 	printk(KERN_INFO "mtd: partition \"%s\" created automatically, ofs=%llX, len=%llX \n",
 		ROOTFS_SPLIT_NAME, dpart->offset, dpart->size);
 
-	slave = add_one_partition(master, dpart, 0, split_offset);
+	slave = allocate_partition(master, dpart, 0, split_offset);
 	if (!slave) {
 		kfree(dpart);
 		return -ENOMEM;
