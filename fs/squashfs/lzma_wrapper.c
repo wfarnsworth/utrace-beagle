@@ -25,6 +25,7 @@
 #include <linux/buffer_head.h>
 #include <linux/mutex.h>
 #include <linux/vmalloc.h>
+#include <linux/slab.h>
 #include <linux/decompress/unlzma.h>
 
 #include "squashfs_fs.h"
