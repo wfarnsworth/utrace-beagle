@@ -21,6 +21,7 @@
 #include <linux/init.h>
 #include <linux/platform_device.h>
 #include <linux/gpio.h>
+#include <linux/delay.h>
 
 #include <linux/spi/spi.h>
 #include <linux/spi/spi_bitbang.h>
@@ -69,6 +70,7 @@ struct spi_gpio {
  *		#define	SPI_MOSI_GPIO	120
  *		#define	SPI_SCK_GPIO	121
  *		#define	SPI_N_CHIPSEL	4
+ *		#undef NEED_SPIDELAY
  *		#include "spi_gpio.c"
  */
 
@@ -76,6 +78,7 @@ struct spi_gpio {
 #define DRIVER_NAME	"spi_gpio"
 
 #define GENERIC_BITBANG	/* vs tight inlines */
+#define NEED_SPIDELAY	1
 
 /* all functions referencing these symbols must define pdata */
 #define SPI_MISO_GPIO	((pdata)->miso)
@@ -120,12 +123,20 @@ static inline int getmiso(const struct spi_device *spi)
 #undef pdata
 
 /*
- * NOTE:  this clocks "as fast as we can".  It "should" be a function of the
- * requested device clock.  Software overhead means we usually have trouble
- * reaching even one Mbit/sec (except when we can inline bitops), so for now
- * we'll just assume we never need additional per-bit slowdowns.
+ * NOTE:  to clock "as fast as we can", set spi_device.max_speed_hz
+ * and spi_transfer.speed_hz to 0.
+ * Otherwise this is a function of the requested device clock.
+ * Software overhead means we usually have trouble
+ * reaching even one Mbit/sec (except when we can inline bitops). So on small
+ * embedded devices with fast SPI slaves you usually don't need a delay.
  */
-#define spidelay(nsecs)	do {} while (0)
+static inline void spidelay(unsigned nsecs)
+{
+#ifdef NEED_SPIDELAY
+	if (unlikely(nsecs))
+		ndelay(nsecs);
+#endif /* NEED_SPIDELAY */
+}
 
 #include "spi_bitbang_txrx.h"
 
@@ -255,7 +266,7 @@ static void spi_gpio_cleanup(struct spi_device *spi)
 	spi_bitbang_cleanup(spi);
 }
 
-static int __init spi_gpio_alloc(unsigned pin, const char *label, bool is_in)
+static int __devinit spi_gpio_alloc(unsigned pin, const char *label, bool is_in)
 {
 	int value;
 
@@ -269,7 +280,7 @@ static int __init spi_gpio_alloc(unsigned pin, const char *label, bool is_in)
 	return value;
 }
 
-static int __init
+static int __devinit
 spi_gpio_request(struct spi_gpio_platform_data *pdata, const char *label,
 	u16 *res_flags)
 {
@@ -311,7 +322,7 @@ done:
 	return value;
 }
 
-static int __init spi_gpio_probe(struct platform_device *pdev)
+static int __devinit spi_gpio_probe(struct platform_device *pdev)
 {
 	int				status;
 	struct spi_master		*master;
@@ -379,7 +390,7 @@ gpio_free:
 	return status;
 }
 
-static int __exit spi_gpio_remove(struct platform_device *pdev)
+static int __devexit spi_gpio_remove(struct platform_device *pdev)
 {
 	struct spi_gpio			*spi_gpio;
 	struct spi_gpio_platform_data	*pdata;
@@ -408,12 +419,13 @@ MODULE_ALIAS("platform:" DRIVER_NAME);
 static struct platform_driver spi_gpio_driver = {
 	.driver.name	= DRIVER_NAME,
 	.driver.owner	= THIS_MODULE,
-	.remove		= __exit_p(spi_gpio_remove),
+	.probe		= spi_gpio_probe,
+	.remove		= __devexit_p(spi_gpio_remove),
 };
 
 static int __init spi_gpio_init(void)
 {
-	return platform_driver_probe(&spi_gpio_driver, spi_gpio_probe);
+	return platform_driver_register(&spi_gpio_driver);
 }
 module_init(spi_gpio_init);
 

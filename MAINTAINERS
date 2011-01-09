@@ -2723,6 +2723,11 @@ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git
 S:	Maintained
 F:	drivers/media/video/gspca/
 
+GPIOMMC DRIVER
+P:	Michael Buesch
+M:	mb@bu3sch.de
+S:	Maintained
+
 HARDWARE MONITORING
 M:	Jean Delvare <khali@linux-fr.org>
 M:	Guenter Roeck <guenter.roeck@ericsson.com>
