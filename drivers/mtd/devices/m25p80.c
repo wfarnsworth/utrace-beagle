@@ -654,6 +654,19 @@ static const struct spi_device_id m25p_ids[] = {
 	{ "mx25l12805d", INFO(0xc22018, 0, 64 * 1024, 256, 0) },
 	{ "mx25l12855e", INFO(0xc22618, 0, 64 * 1024, 256, 0) },
 
+	/* EON -- en25pxx */
+	{ "en25p32", INFO(0x1c2016, 0, 64 * 1024,  64, 0) },
+	{ "en25p64", INFO(0x1c2017, 0, 64 * 1024, 128, 0) },
+
+	/* Numonyx -- xxxs33b */
+	{ "160s33b",  INFO(0x898911, 0, 64 * 1024,  64, 0) },
+	{ "320s33b",  INFO(0x898912, 0, 64 * 1024, 128, 0) },
+	{ "640s33b",  INFO(0x898913, 0, 64 * 1024, 256, 0) },
+
+	/* PMC -- pm25x "blocks" are 32K, sectors are 4K */
+	{ "pm25lv512",    INFO(0, 0, 32 * 1024, 2, SECT_4K) },
+	{ "pm25lv010",    INFO(0, 0, 32 * 1024, 4, SECT_4K) },
+
 	/* Spansion -- single (large) sector size only, at least
 	 * for the chips listed here (without boot sectors).
 	 */
