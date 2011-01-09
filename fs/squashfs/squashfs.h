@@ -107,3 +107,6 @@ extern const struct squashfs_decompressor squashfs_zlib_comp_ops;
 
 /* lzo_wrapper.c */
 extern const struct squashfs_decompressor squashfs_lzo_comp_ops;
+
+/* lzma wrapper.c */
+extern const struct squashfs_decompressor squashfs_lzma_comp_ops;
