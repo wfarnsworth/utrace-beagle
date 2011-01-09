@@ -34,6 +34,8 @@
  * erasesize aligned (e.g. use MTDPART_OFS_NEXTBLK).
  */
 
+struct mtd_info;
+
 struct mtd_partition {
 	char *name;			/* identifier string */
 	uint64_t size;			/* partition size */
@@ -46,9 +48,6 @@ struct mtd_partition {
 #define MTDPART_OFS_NXTBLK	(-2)
 #define MTDPART_OFS_APPEND	(-1)
 #define MTDPART_SIZ_FULL	(0)
-
-
-struct mtd_info;
 
 int add_mtd_partitions(struct mtd_info *, const struct mtd_partition *, int);
 int del_mtd_partitions(struct mtd_info *);
