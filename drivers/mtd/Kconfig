@@ -53,6 +53,16 @@ config MTD_PARTITIONS
 	  devices. Partitioning on NFTL 'devices' is a different - that's the
 	  'normal' form of partitioning used on a block device.
 
+config MTD_ROOTFS_ROOT_DEV
+	bool "Automatically set 'rootfs' partition to be root filesystem"
+	depends on MTD_PARTITIONS
+	default y
+
+config MTD_ROOTFS_SPLIT
+	bool "Automatically split 'rootfs' partition for squashfs"
+	depends on MTD_PARTITIONS
+	default y
+
 config MTD_REDBOOT_PARTS
 	tristate "RedBoot partition table parsing"
 	depends on MTD_PARTITIONS

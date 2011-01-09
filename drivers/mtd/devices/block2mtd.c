@@ -14,6 +14,7 @@
 #include <linux/list.h>
 #include <linux/init.h>
 #include <linux/mtd/mtd.h>
+#include <linux/mtd/partitions.h>
 #include <linux/buffer_head.h>
 #include <linux/mutex.h>
 #include <linux/mount.h>
@@ -29,6 +30,8 @@ struct block2mtd_dev {
 	struct block_device *blkdev;
 	struct mtd_info mtd;
 	struct mutex write_mutex;
+	rwlock_t bdev_mutex;
+	char devname[0];
 };
 
 
@@ -81,6 +84,12 @@ static int block2mtd_erase(struct mtd_info *mtd, struct erase_info *instr)
 	size_t len = instr->len;
 	int err;
 
+	read_lock(&dev->bdev_mutex);
+	if (!dev->blkdev) {
+		err = -EINVAL;
+		goto done;
+	}
+
 	instr->state = MTD_ERASING;
 	mutex_lock(&dev->write_mutex);
 	err = _block2mtd_erase(dev, from, len);
@@ -92,6 +101,9 @@ static int block2mtd_erase(struct mtd_info *mtd, struct erase_info *instr)
 		instr->state = MTD_ERASE_DONE;
 
 	mtd_erase_callback(instr);
+done:
+	read_unlock(&dev->bdev_mutex);
+
 	return err;
 }
 
@@ -103,10 +115,14 @@ static int block2mtd_read(struct mtd_info *mtd, loff_t from, size_t len,
 	struct page *page;
 	int index = from >> PAGE_SHIFT;
 	int offset = from & (PAGE_SIZE-1);
-	int cpylen;
+	int cpylen, err = 0;
 
-	if (from > mtd->size)
-		return -EINVAL;
+	read_lock(&dev->bdev_mutex);
+	if (!dev->blkdev || (from > mtd->size)) {
+		err = -EINVAL;
+		goto done;
+	}
+
 	if (from + len > mtd->size)
 		len = mtd->size - from;
 
@@ -121,10 +137,14 @@ static int block2mtd_read(struct mtd_info *mtd, loff_t from, size_t len,
 		len = len - cpylen;
 
 		page = page_read(dev->blkdev->bd_inode->i_mapping, index);
-		if (!page)
-			return -ENOMEM;
-		if (IS_ERR(page))
-			return PTR_ERR(page);
+		if (!page) {
+			err = -ENOMEM;
+			goto done;
+		}
+		if (IS_ERR(page)) {
+			err = PTR_ERR(page);
+			goto done;
+		}
 
 		memcpy(buf, page_address(page) + offset, cpylen);
 		page_cache_release(page);
@@ -135,7 +155,9 @@ static int block2mtd_read(struct mtd_info *mtd, loff_t from, size_t len,
 		offset = 0;
 		index++;
 	}
-	return 0;
+done:
+	read_unlock(&dev->bdev_mutex);
+	return err;
 }
 
 
@@ -187,12 +209,22 @@ static int block2mtd_write(struct mtd_info *mtd, loff_t to, size_t len,
 		size_t *retlen, const u_char *buf)
 {
 	struct block2mtd_dev *dev = mtd->priv;
-	int err;
+	int err = 0;
+
+	read_lock(&dev->bdev_mutex);
+	if (!dev->blkdev) {
+		err = -EINVAL;
+		goto done;
+	}
 
 	if (!len)
-		return 0;
-	if (to >= mtd->size)
-		return -ENOSPC;
+		goto done;
+
+	if (to >= mtd->size) {
+		err = -ENOSPC;
+		goto done;
+	}
+
 	if (to + len > mtd->size)
 		len = mtd->size - to;
 
@@ -201,6 +233,8 @@ static int block2mtd_write(struct mtd_info *mtd, loff_t to, size_t len,
 	mutex_unlock(&dev->write_mutex);
 	if (err > 0)
 		err = 0;
+done:
+	read_unlock(&dev->bdev_mutex);
 	return err;
 }
 
@@ -209,51 +243,27 @@ static int block2mtd_write(struct mtd_info *mtd, loff_t to, size_t len,
 static void block2mtd_sync(struct mtd_info *mtd)
 {
 	struct block2mtd_dev *dev = mtd->priv;
-	sync_blockdev(dev->blkdev);
+
+	read_lock(&dev->bdev_mutex);
+	if (dev->blkdev)
+		sync_blockdev(dev->blkdev);
+	read_unlock(&dev->bdev_mutex);
 	return;
 }
 
-
-static void block2mtd_free_device(struct block2mtd_dev *dev)
-{
-	if (!dev)
-		return;
-
-	kfree(dev->mtd.name);
-
-	if (dev->blkdev) {
-		invalidate_mapping_pages(dev->blkdev->bd_inode->i_mapping,
-					0, -1);
-		close_bdev_exclusive(dev->blkdev, FMODE_READ|FMODE_WRITE);
-	}
-
-	kfree(dev);
-}
-
-
-/* FIXME: ensure that mtd->size % erase_size == 0 */
-static struct block2mtd_dev *add_device(char *devname, int erase_size)
+static int _open_bdev(struct block2mtd_dev *dev)
 {
 	struct block_device *bdev;
-	struct block2mtd_dev *dev;
-	char *name;
-
-	if (!devname)
-		return NULL;
-
-	dev = kzalloc(sizeof(struct block2mtd_dev), GFP_KERNEL);
-	if (!dev)
-		return NULL;
 
 	/* Get a handle on the device */
-	bdev = open_bdev_exclusive(devname, FMODE_READ|FMODE_WRITE, NULL);
+	bdev = open_bdev_exclusive(dev->devname, FMODE_READ|FMODE_WRITE, NULL);
 #ifndef MODULE
 	if (IS_ERR(bdev)) {
 
 		/* We might not have rootfs mounted at this point. Try
 		   to resolve the device name by other means. */
-
-		dev_t devt = name_to_dev_t(devname);
+		wait_for_device_probe();
+		dev_t devt = name_to_dev_t(dev->devname);
 		if (devt) {
 			bdev = open_by_devnum(devt, FMODE_WRITE | FMODE_READ);
 		}
@@ -261,27 +271,110 @@ static struct block2mtd_dev *add_device(char *devname, int erase_size)
 #endif
 
 	if (IS_ERR(bdev)) {
-		ERROR("error: cannot open device %s", devname);
-		goto devinit_err;
+		ERROR("error: cannot open device %s", dev->devname);
+		return 1;
 	}
 	dev->blkdev = bdev;
 
 	if (MAJOR(bdev->bd_dev) == MTD_BLOCK_MAJOR) {
 		ERROR("attempting to use an MTD device as a block device");
-		goto devinit_err;
+		return 1;
 	}
 
-	mutex_init(&dev->write_mutex);
+	return 0;
+}
 
-	/* Setup the MTD structure */
-	/* make the name contain the block device in */
-	name = kasprintf(GFP_KERNEL, "block2mtd: %s", devname);
+static void _close_bdev(struct block2mtd_dev *dev)
+{
+	struct block_device *bdev;
+
+	if (!dev->blkdev)
+		return;
+
+	bdev = dev->blkdev;
+	invalidate_mapping_pages(dev->blkdev->bd_inode->i_mapping, 0, -1);
+	close_bdev_exclusive(dev->blkdev, FMODE_READ|FMODE_WRITE);
+	dev->blkdev = NULL;
+}
+
+static void block2mtd_free_device(struct block2mtd_dev *dev)
+{
+	if (!dev)
+		return;
+
+	kfree(dev->mtd.name);
+	_close_bdev(dev);
+	kfree(dev);
+}
+
+
+static int block2mtd_refresh(struct mtd_info *mtd)
+{
+	struct block2mtd_dev *dev = mtd->priv;
+	struct block_device *bdev;
+	dev_t devt;
+	int err = 0;
+
+	/* no other mtd function can run at this point */
+	write_lock(&dev->bdev_mutex);
+
+	/* get the device number for the whole disk */
+	devt = MKDEV(MAJOR(dev->blkdev->bd_dev), 0);
+
+	/* close the old block device */
+	_close_bdev(dev);
+
+	/* open the whole disk, issue a partition rescan, then */
+	bdev = open_by_devnum(devt, FMODE_WRITE | FMODE_READ);
+	if (!bdev || !bdev->bd_disk)
+		err = -EINVAL;
+#ifndef CONFIG_MTD_BLOCK2MTD_MODULE
+	else
+		err = rescan_partitions(bdev->bd_disk, bdev);
+#endif
+	if (bdev)
+		close_bdev_exclusive(bdev, FMODE_READ|FMODE_WRITE);
+
+	/* try to open the partition block device again */
+	_open_bdev(dev);
+	write_unlock(&dev->bdev_mutex);
+
+	return err;
+}
+
+/* FIXME: ensure that mtd->size % erase_size == 0 */
+static struct block2mtd_dev *add_device(char *devname, int erase_size, char *mtdname)
+{
+	struct block2mtd_dev *dev;
+	struct mtd_partition *part;
+	char *name;
+
+	if (!devname)
+		return NULL;
+
+	dev = kzalloc(sizeof(struct block2mtd_dev) + strlen(devname) + 1, GFP_KERNEL);
+	if (!dev)
+		return NULL;
+
+	strcpy(dev->devname, devname);
+
+	if (_open_bdev(dev))
+		goto devinit_err;
+
+	mutex_init(&dev->write_mutex);
+	rwlock_init(&dev->bdev_mutex);
+
+	if (!mtdname)
+		mtdname = devname;
+
+	name = kmalloc(strlen(mtdname) + 1, GFP_KERNEL);
 	if (!name)
 		goto devinit_err;
 
+	strcpy(name, mtdname);
 	dev->mtd.name = name;
 
-	dev->mtd.size = dev->blkdev->bd_inode->i_size & PAGE_MASK;
+	dev->mtd.size = dev->blkdev->bd_inode->i_size & PAGE_MASK & ~(erase_size - 1);
 	dev->mtd.erasesize = erase_size;
 	dev->mtd.writesize = 1;
 	dev->mtd.type = MTD_RAM;
@@ -293,15 +386,19 @@ static struct block2mtd_dev *add_device(char *devname, int erase_size)
 	dev->mtd.read = block2mtd_read;
 	dev->mtd.priv = dev;
 	dev->mtd.owner = THIS_MODULE;
+	dev->mtd.refresh_device = block2mtd_refresh;
 
-	if (add_mtd_device(&dev->mtd)) {
+	part = kzalloc(sizeof(struct mtd_partition), GFP_KERNEL);
+	part->name = dev->mtd.name;
+	part->offset = 0;
+	part->size = dev->mtd.size;
+	if (add_mtd_partitions(&dev->mtd, part, 1)) {
 		/* Device didnt get added, so free the entry */
 		goto devinit_err;
 	}
 	list_add(&dev->list, &blkmtd_device_list);
 	INFO("mtd%d: [%s] erase_size = %dKiB [%d]", dev->mtd.index,
-			dev->mtd.name + strlen("block2mtd: "),
-			dev->mtd.erasesize >> 10, dev->mtd.erasesize);
+			mtdname, dev->mtd.erasesize >> 10, dev->mtd.erasesize);
 	return dev;
 
 devinit_err:
@@ -374,9 +471,9 @@ static char block2mtd_paramline[80 + 12]; /* 80 for device, 12 for erase size */
 
 static int block2mtd_setup2(const char *val)
 {
-	char buf[80 + 12]; /* 80 for device, 12 for erase size */
+	char buf[80 + 12 + 80]; /* 80 for device, 12 for erase size, 80 for name */
 	char *str = buf;
-	char *token[2];
+	char *token[3];
 	char *name;
 	size_t erase_size = PAGE_SIZE;
 	int i, ret;
@@ -387,7 +484,7 @@ static int block2mtd_setup2(const char *val)
 	strcpy(str, val);
 	kill_final_newline(str);
 
-	for (i = 0; i < 2; i++)
+	for (i = 0; i < 3; i++)
 		token[i] = strsep(&str, ",");
 
 	if (str)
@@ -407,7 +504,10 @@ static int block2mtd_setup2(const char *val)
 		}
 	}
 
-	add_device(name, erase_size);
+	if (token[2] && (strlen(token[2]) + 1 > 80))
+		parse_err("mtd device name too long");
+
+	add_device(name, erase_size, token[2]);
 
 	return 0;
 }
@@ -441,7 +541,7 @@ static int block2mtd_setup(const char *val, struct kernel_param *kp)
 
 
 module_param_call(block2mtd, block2mtd_setup, NULL, NULL, 0200);
-MODULE_PARM_DESC(block2mtd, "Device to use. \"block2mtd=<dev>[,<erasesize>]\"");
+MODULE_PARM_DESC(block2mtd, "Device to use. \"block2mtd=<dev>[,<erasesize>[,<name>]]\"");
 
 static int __init block2mtd_init(void)
 {

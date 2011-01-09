@@ -770,6 +770,7 @@ static int mtd_ioctl(struct file *file, u_int cmd, u_long arg)
 	{
 		struct erase_info_user einfo;
 
+		printk ("#####%s  %d  ISLOCKED=0x%x cmd=0x%x\n", __func__, __ILNE__, MEMISLOCKED, cmd);
 		if (copy_from_user(&einfo, argp, sizeof(einfo)))
 			return -EFAULT;
 
@@ -813,6 +814,14 @@ static int mtd_ioctl(struct file *file, u_int cmd, u_long arg)
 			return mtd->block_isbad(mtd, offs);
 		break;
 	}
+#ifdef CONFIG_MTD_PARTITIONS
+	case MTDREFRESH:
+	{
+		printk ("#####%s  %d  FRESH=0x%x cmd=0x%x\n", __func__, __ILNE__, MTDREFRESH, cmd);
+		ret = refresh_mtd_partitions(mtd);
+		break;
+	}
+#endif
 
 	case MEMSETBADBLOCK:
 	{

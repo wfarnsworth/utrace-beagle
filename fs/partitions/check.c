@@ -707,6 +707,7 @@ rescan:
 	kfree(state);
 	return 0;
 }
+EXPORT_SYMBOL(rescan_partitions);
 
 unsigned char *read_dev_sector(struct block_device *bdev, sector_t n, Sector *p)
 {
