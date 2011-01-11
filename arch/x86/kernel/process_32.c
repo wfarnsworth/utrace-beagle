@@ -76,7 +76,7 @@ void enter_idle(void)
 	notify_idle(IDLE_START);
 }
 
-static void __exit_idle(void)
+void __exit_idle(void)
 {
 	if (x86_test_and_clear_bit_percpu(0, is_idle) == 0)
 		return;
@@ -146,9 +146,11 @@ void cpu_idle(void)
 			stop_critical_timings();
 			pm_idle();
 			start_critical_timings();
-			/* In many cases the interrupt that ended idle
-			   has already called exit_idle. But some idle
-			   loops can be woken up without interrupt. */
+			/*
+			 * In many cases the interrupt that ended idle
+			 * has already called exit_idle. But some idle
+			 * loops can be woken up without interrupt.
+			 */
 			__exit_idle();
 			trace_power_end(smp_processor_id());
 		}
