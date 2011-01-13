@@ -16,6 +16,9 @@ tag kgdb
 # include features/lttng/lttng.scc
 # tag lttng
 
+include features/systemtap/systemtap.scc
+tag systemtap
+
 # include features/ocd/ocd.scc
 # tag ocd
 
