@@ -132,7 +132,7 @@ static void invalidate_vma(unsigned long pg_offset, unsigned long bus_addr) {
 			} else {
 				atomic_add_negative(-1, &pte_page(*pte)->_mapcount);
 				put_page(pte_page(*pte));
-				dec_mm_counter(entry->vma->vm_mm, file_rss);
+				dec_mm_counter(entry->vma->vm_mm, MM_FILEPAGES);
 			}
 
 			pte_clear(entry->vma->vm_mm, vaddr, pte);
