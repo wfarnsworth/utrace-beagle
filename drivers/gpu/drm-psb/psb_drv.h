@@ -808,7 +808,7 @@ extern int drm_psb_detear;
 #define PSB_DEBUG(_flag, _fmt, _arg...)					\
 	do {								\
 	  if (unlikely((_flag) & drm_psb_debug))			\
-			printk(KERN_DEBUG				\
+			printk(KERN_ERR				\
 			       "[psb:0x%02x:%s] " _fmt , _flag,	\
 			       __FUNCTION__ , ##_arg);			\
 	} while (0)

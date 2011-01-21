@@ -264,9 +264,9 @@ static void *agp_remap(unsigned long offset, unsigned long size,
 		return NULL;
 
 	phys_addr_map =
-	    agpmem->memory->memory + (offset - agpmem->bound) / PAGE_SIZE;
+	    agpmem->memory->pages + (offset - agpmem->bound) / PAGE_SIZE;
 	for (i = 0; i < num_pages; ++i)
-		page_map[i] = pfn_to_page(phys_addr_map[i] >> PAGE_SHIFT);
+                page_map[i] = phys_addr_map[i];
 	addr = vmap(page_map, num_pages, VM_IOREMAP, PAGE_AGP);
 	vfree(page_map);
 

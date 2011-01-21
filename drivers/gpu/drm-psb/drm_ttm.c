@@ -28,6 +28,8 @@
  * Authors: Thomas Hellström <thomas-at-tungstengraphics-dot-com>
  */
 
+#include "linux/spinlock.h"
+#include "asm/agp.h"
 #include "drmP.h"
 
 static void drm_ttm_ipi_handler(void *null)

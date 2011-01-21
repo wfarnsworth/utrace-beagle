@@ -34,8 +34,10 @@
 #include <linux/cpu.h>
 #include <linux/notifier.h>
 #include <linux/fb.h>
+#include "linux/spinlock.h"
+#include "asm/agp.h"
 
-int drm_psb_debug = 0;
+int drm_psb_debug = 255;
 EXPORT_SYMBOL(drm_psb_debug);
 static int drm_psb_trap_pagefaults = 0;
 static int drm_psb_clock_gating = 0;

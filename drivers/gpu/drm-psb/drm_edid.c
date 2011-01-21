@@ -11,6 +11,7 @@
 #include "drm_edid.h"
 
 #include <acpi/acpi_drivers.h>
+#include <linux/i2c.h>
 
 /* Valid EDID header has these bytes */
 static u8 edid_header[] = { 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00 };
@@ -39,7 +40,7 @@ int drm_get_acpi_edid(char *method, char *edid, ssize_t length)
 	if (obj && obj->type == ACPI_TYPE_BUFFER)
 		memcpy(edid, obj->buffer.pointer, obj->buffer.length);
 	else {
-		printk(KERN_ERR PREFIX "Invalid _DDC data\n");
+		printk(KERN_ERR "Invalid _DDC data\n");
 		status = -EFAULT;
 		kfree(obj);
 	}

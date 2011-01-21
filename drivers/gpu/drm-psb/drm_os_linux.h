@@ -50,12 +50,6 @@
 
 /** IRQ handler arguments and return type and values */
 #define DRM_IRQ_ARGS		int irq, void *arg
-/** backwards compatibility with old irq return values */
-#ifndef IRQ_HANDLED
-typedef void irqreturn_t;
-#define IRQ_HANDLED		/* nothing */
-#define IRQ_NONE		/* nothing */
-#endif
 
 /** AGP types */
 #if __OS_HAS_AGP

@@ -29,6 +29,7 @@
 
 #include <linux/i2c.h>
 #include <linux/backlight.h>
+#include <linux/i2c.h>
 #include "drm_crtc.h"
 #include "drm_edid.h"
 #include "intel_lvds.h"
