@@ -1,0 +1,19 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+## 05_edid-crash.dpatch by  <jbs@jbs-laptop>
+##
+## All lines beginning with `## DP:' are a description of the patch.
+## DP: fix edid crash on unsupported mode
+
+@DPATCH@
+
+--- psb-kernel-source-4.41.1/drm_edid.c~	2009-04-16 05:25:01.000000000 +0200
++++ psb-kernel-source-4.41.1/drm_edid.c	2009-12-08 23:03:33.000000000 +0100
+@@ -316,6 +316,8 @@
+ 		/* Detailed mode timing */
+ 		if (timing->pixel_clock) {
+ 			newmode = drm_mode_detailed(dev, timing);
++			if(!newmode)
++				continue;
+ 			/* First detailed mode is preferred */
+ 			if (i == 0 && edid->preferred_timing)
+ 				newmode->type |= DRM_MODE_TYPE_PREFERRED;

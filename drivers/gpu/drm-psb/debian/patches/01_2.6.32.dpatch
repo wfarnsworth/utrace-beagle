@@ -1,0 +1,43 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+## 01_2.6.32.dpatch by  <jbs@jbs-laptop>
+##
+## All lines beginning with `## DP:' are a description of the patch.
+## DP: fixes for kernel 2.6.32
+
+@DPATCH@
+
+psb: Fix compilation with kernel 2.6.32
+
+This patch made from the Gentoo ebuild written by Zac Medico <zmedico@gentoo.org>,
+to fix compilation of the psb module with kernel 2.6.32
+
+It should be safe to be used with older version of the kernel. It fixes two changes:
+ * In commit 6a12235c7d2d75c7d94b9afcaaecd422ff845ce0 phys_to_gart was removed
+   since it is a 1:1 mapping on all platforms.
+ * The acpi PREFIX constant is gone.
+
+---
+diff -urP psb-4.41.1-4mdv2010.0.orig/drm_agpsupport.c psb-4.41.1-4mdv2010.0.fix2632/drm_agpsupport.c
+--- psb-4.41.1-4mdv2010.0.orig/drm_agpsupport.c	2009-10-08 12:09:11.000000000 +0200
++++ psb-4.41.1-4mdv2010.0.fix2632/drm_agpsupport.c	2009-12-05 02:46:28.000421027 +0100
+@@ -524,7 +524,7 @@
+ 	DRM_DEBUG("Current page count is %ld\n", (long) mem->page_count);
+ 	mem->page_count = 0;
+ 	for (cur_page = pages; cur_page < last_page; ++cur_page)
+-		mem->pages[mem->page_count++] = phys_to_gart(page_to_phys(*cur_page));
++		mem->pages[mem->page_count++] = page_to_phys(*cur_page);
+ 	agp_be->mem = mem;
+ 	return 0;
+ }
+diff -urP psb-4.41.1-4mdv2010.0.orig/drm_edid.c psb-4.41.1-4mdv2010.0.fix2632/drm_edid.c
+--- psb-4.41.1-4mdv2010.0.orig/drm_edid.c	2009-10-08 12:09:11.000000000 +0200
++++ psb-4.41.1-4mdv2010.0.fix2632/drm_edid.c	2009-12-05 02:46:38.155168734 +0100
+@@ -39,7 +39,7 @@
+ 	if (obj && obj->type == ACPI_TYPE_BUFFER)
+ 		memcpy(edid, obj->buffer.pointer, obj->buffer.length);
+ 	else {
+-		printk(KERN_ERR PREFIX "Invalid _DDC data\n");
++		printk(KERN_ERR "ACPI: " "Invalid _DDC data\n");
+ 		status = -EFAULT;
+ 		kfree(obj);
+ 	}

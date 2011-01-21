@@ -1,0 +1,10 @@
+PACKAGE_NAME="psb-kernel-source"
+PACKAGE_VERSION="#VERSION#"
+CLEAN="make clean"
+BUILT_MODULE_NAME[0]="psb"
+BUILT_MODULE_LOCATION[0]="."
+DEST_MODULE_LOCATION[0]="/kernel/drivers/gpu/drm"
+BUILT_MODULE_NAME[1]="drm-psb"
+DEST_MODULE_LOCATION[1]="/kernel/drivers/gpu/drm"
+AUTOINSTALL=yes
+MAKE[0]="make LINUXDIR=/lib/modules/$kernelver/build DRM_MODULES=psb"

@@ -1,0 +1,11 @@
+01_2.6.32.dpatch
+02_agp_memory.dpatch
+#03_devt.dpatch
+04_drmpsb.dpatch
+05_edid-crash.dpatch
+06_i2c-intelfb.dpatch
+#07_current_euid.dpatch
+08_irqreturn.dpatch
+use_udev.dpatch
+10_change_prefix.dpatch
+2.6.34.dpatch

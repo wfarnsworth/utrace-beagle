@@ -1,0 +1,20 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+## 03_devt.dpatch by  <jbs@jbs-laptop>
+##
+## All lines beginning with `## DP:' are a description of the patch.
+## DP: fixes
+
+@DPATCH@
+
+diff -p -up psb-kernel-source-4.41.1/drm_sysfs.c.devt psb-kernel-source-4.41.1/drm_sysfs.c
+--- psb-kernel-source-4.41.1/drm_sysfs.c.devt	2009-09-23 13:48:41.000000000 +0200
++++ psb-kernel-source-4.41.1/drm_sysfs.c	2009-09-23 14:02:04.000000000 +0200
+@@ -167,7 +167,7 @@ int drm_sysfs_device_add(struct drm_devi
+ 	 * will create the device node.  We don't want to do that just
+ 	 * yet...
+ 	 */
+-	/* dev->dev.devt = head->device; */
++	dev->dev.devt = head->device;
+ 	dev_set_name(&dev->dev, "card%d", head->minor);
+ 
+ 	err = device_register(&dev->dev);

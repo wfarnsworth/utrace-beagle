@@ -1,0 +1,26 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+## 2.6.34.dpatch by  <luca@ubuntu>
+##
+## All lines beginning with `## DP:' are a description of the patch.
+## DP: No description.
+
+@DPATCH@
+diff -urNad psb-kernel-source-4.42.0~/intel_lvds.c psb-kernel-source-4.42.0/intel_lvds.c
+--- psb-kernel-source-4.42.0~/intel_lvds.c	2010-05-16 23:16:36.931029345 +0200
++++ psb-kernel-source-4.42.0/intel_lvds.c	2010-05-16 23:19:53.395070146 +0200
+@@ -801,7 +801,14 @@
+ 
+ 	if ((blc_type == BLC_I2C_TYPE) || (blc_type == BLC_PWM_TYPE)){	
+ 		/* add /sys/class/backlight interface as standard */
+-		psbbl_device = backlight_device_register("psblvds", &dev->pdev->dev, dev, &psbbl_ops);
++		#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,34)
++			struct backlight_properties props;
++			memset(&props, 0, sizeof(struct backlight_properties));
++			props.max_brightness = BRIGHTNESS_MAX_LEVEL;
++			psbbl_device = backlight_device_register("psblvds", &dev->pdev->dev, dev, &psbbl_ops, &props);
++		#else
++			psbbl_device = backlight_device_register("psblvds", &dev->pdev->dev, dev, &psbbl_ops);
++		#endif
+ 		if (psbbl_device){
+ #if LINUX_VERSION_CODE <= KERNEL_VERSION(2,6,20)
+ 			down(&psbbl_device->sem);

@@ -1,0 +1,36 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+## use_udev_for_the_love_of_god.patch.dpatch by Steve Kowalik <stevenk@ubuntu.com>
+##
+## All lines beginning with `## DP:' are a description of the patch.
+## DP: Use udev!!
+
+@DPATCH@
+diff -urNad psb-kernel-source-4.37~/drm_sysfs.c psb-kernel-source-4.37/drm_sysfs.c
+--- psb-kernel-source-4.37~/drm_sysfs.c	2009-04-17 18:35:58.000000000 +1000
++++ psb-kernel-source-4.37/drm_sysfs.c	2009-04-17 18:52:59.000000000 +1000
+@@ -167,7 +167,7 @@
+ 	 * will create the device node.  We don't want to do that just
+ 	 * yet...
+ 	 */
+-	/* dev->dev.devt = head->device; */
++	dev->dev.devt = head->device;
+ 	dev_set_name(&dev->dev, "card%d", head->minor);
+ 
+ 	err = device_register(&dev->dev);
+@@ -176,7 +176,7 @@
+ 		goto err_out;
+ 	}
+ 
+-	for (i = 0; i < ARRAY_SIZE(device_attrs); i++) {
++/*	for (i = 0; i < ARRAY_SIZE(device_attrs); i++) {
+ 		err = device_create_file(&dev->dev, &device_attrs[i]);
+ 		if (err)
+ 			goto err_out_files;
+@@ -189,6 +189,7 @@
+ 		for (j = 0; j < i; j++)
+ 			device_remove_file(&dev->dev, &device_attrs[i]);
+ 	device_unregister(&dev->dev);
++*/
+ err_out:
+ 
+ 	return err;

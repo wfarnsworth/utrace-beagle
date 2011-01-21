@@ -1,0 +1,36 @@
+psb-kernel-source (4.42.0-0ubuntu2~1004um2) lucid; urgency=low
+
+  [ Luca Forina ]
+  * Fix call to backlight_device_register() changed in kernel 2.6.34
+
+  [ Vitaliy Kulikov ]
+  * PPA build
+
+ -- Vitaliy Kulikov <slonua@gmail.com>  Tue, 18 May 2010 14:35:31 +0300
+
+psb-kernel-source (4.42.0-0ubuntu2~1004um1) lucid; urgency=low
+
+  * Removed psb-module and psb-kernel-headers, deprecated
+
+ -- Jose Bernardo Bandos <jbbandos@hotmail.com>  Sat, 08 May 2010 21:59:57 +0200
+
+psb-kernel-source (4.42.0-0ubuntu1~1004um1) lucid; urgency=low
+
+  * renamed drm to psb_drm and added the patch from Mandriva to change the respective prefixes.
+  * changed dkms.conf to enable AUTOINSTALL (so it will recompile when a new kernel is installed)
+  * changed module install paths in dkms.conf to /kernel/drivers/gpu/drm
+  * Bumped VERSION to 4.42.0 to reflect the amount of changes
+
+ -- Jose Bernardo Bandos <jbbandos@hotmail.com>  Thu, 29 Apr 2010 17:54:04 +2000
+
+psb-kernel-source (4.41.7-0ubuntu1~1004um1) lucid; urgency=low
+
+  * Initial package for lucid, utilising DKMS.
+
+ -- Jose Bernardo Bandos <jbbandos@hotmail.com>  Thu, 29 Apr 2010 17:54:04 +2000
+
+psb-kernel-source (4.41.2-0ubuntu1~910um1) karmic; urgency=low
+
+  * Initial package for Karmic, utilising DKMS.
+
+ -- Luca Forina <luca.forina@gmail.com>  Thu, 11 Aug 2009 11:44:04 +1000
