@@ -30,17 +30,23 @@
 # Return values: zero if a ".config" was created, one otherwise.
 
 CURRENT=`git branch |grep \*|sed 's/^\* //'`
-SCRIPT_DIR=`pwd`/wrs/scripts
+if [ -d `pwd`/wrs/scripts ]; then
+	SCRIPT_DIR=`pwd`/wrs/scripts
+else
+    	SCRIPT_DIR=`pwd`/meta/scripts
+fi
 PATH=$PATH:$SCRIPT_DIR
 QUICK=1
 META_DIR=meta
 
 usage()
 {
-	echo `basename $0` \[--audit\] \[--reconfig\] [target]
-	echo \t audit: do an audit of final .config file
-	echo \t reconfig: reconfigure an existing build
-	echo \t target: name of the configuration target
+	echo "`basename $0` \[--audit\] \[--reconfig\] \[--o <outdir>] [target] [machine]"
+	echo "   audit: do an audit of final .config file"
+	echo "   reconfig: reconfigure an existing build"
+	echo "   target: name of the configuration target (branch)"
+	echo "   machine: specified if multiple machines use target"
+	echo "   outdir: name of the output directory"
 	exit 1
 }
 
@@ -86,32 +92,45 @@ run_board_config()
 {
     # Can't set these until we've unwound the checkpoint and have wrs data.
     KVER=`cat ./$META_DIR/cfg/kernel-*cache/kver|sed 's/^v//'`
-    WRS_ARCH=`grep WRS_ARCH $SCC | awk '{print $3}'`
-    KPROFILE=`grep WRS_BOARD $SCC | awk '{print $3}'`
-    KTYPE=`grep WRS_KERNEL $SCC | awk '{print $3}'`
-    # KTGT=$KPROFILE-$KTYPE
-    KTGT=$full_target
-    META=./$META_DIR/cfg/meta/`basename $SCC .scc`-meta
 
+    # Look for standard defines, with compatibility fallbacks
+    KARCH=`grep KARCH $SCC | awk '{print $3}'`
+    if [ -z "$KARCH" ]; then
+	KARCH=`grep WRS_ARCH $SCC | awk '{print $3}'`
+    fi
+    KPROFILE=`grep KMACHINE $SCC | awk '{print $3}'`
+    if [ -z "$KPROFILE" ]; then
+	KPROFILE=`grep WRS_BOARD $SCC | awk '{print $3}'`
+    fi
+    KTYPE=`grep KTYPE $SCC | awk '{print $3}'`
+    if [ -z "$KTYPE" ]; then
+	KTYPE=`grep WRS_KERNEL $SCC | awk '{print $3}'`
+    fi
+    # KTGT=$KPROFILE-$KTYPE
+    KTGT=$full_tgt
+    META=./$META_DIR/cfg/meta/`basename $SCC .scc`-meta
+    META_ALT=./$META_DIR/cfg/meta/$KTGT-meta
+    META_ALT_ALT=./$META_DIR/cfg/meta/$KTGT-meta
+    
     # Build system uses linux_BUILD=$(linux_SRC)-$(ktgt)-build
     # with ktgt=$(kprofile)-$(ktype)
     # and KERNEL_CONFIG=${kprofile}-${ktype}-config-${LINUX_KERNEL_VERSION}
-    BUILD_DIR=../linux-$KTGT-build
+    BUILD_DIR=$out_dir
     CFGFILE=$KTGT-config-$KVER
 
-    if [ "x$WRS_ARCH" == "x" ] ; then
+    if [ "x$KARCH" == "x" ] ; then
 	echo Couldnt determine architecture from file:
 	echo -e \\t$SCC
 	echo Assuming scc is not a valid BSP endpoint...
 	return 1
     fi
 
-    # Fixups to match WRS_ARCH onto kernel.org arch
-    if [ $WRS_ARCH == "powerpc_64" ]; then
-	WRS_ARCH=powerpc
+    # Fixups to match KARCH onto kernel.org arch
+    if [ $KARCH == "powerpc_64" ]; then
+	KARCH=powerpc
     fi
-    if [ $WRS_ARCH == "mips64" ]; then
-	WRS_ARCH=mips
+    if [ $KARCH == "mips64" ]; then
+	KARCH=mips
     fi
 
     if [ -z "$reconfig" ] && [ -d $BUILD_DIR ]; then
@@ -135,8 +154,12 @@ run_board_config()
     fi
 
     if [ ! -f $META ]; then
-	echo Failed to find meta series $META
-	return 1
+	if [ ! -f $META_ALT ]; then
+		echo Failed to find meta series $META or $META_ALT
+		return 1
+	else
+		META=$META_ALT
+	fi
     fi
 
     kgit-meta -v -k $META
@@ -155,12 +178,12 @@ run_board_config()
 
     echo "[INFO] Pre-processed cfg file $CFGFILE created."
 
-    make ARCH=$WRS_ARCH O=$BUILD_DIR \
+    make ARCH=$KARCH O=$BUILD_DIR \
 	KBUILD_DEFCONFIG=../../../$META_DIR/cfg/$KTGT/$CFGFILE \
 	defconfig > $META_DIR/cfg/$KTGT/config.log 2>&1
 
     if [ $? != 0 ]; then
-	echo Kernel LKC processing of raw config data failed \($WRS_ARCH\)
+	echo Kernel LKC processing of raw config data failed \($KARCH\)
 	echo See $META_DIR/cfg/$KTGT/config.log for details.
 	return 1
     fi
@@ -178,9 +201,9 @@ cat << EOF
 ********************************************************************************
 
   To build with this kernel configuration, ensure a suitable toolchain
-  is in your path for $WRS_ARCH, note its common command prefix, and do:
+  is in your path for $KARCH, note its common command prefix, and do:
 
-   make O=$BUILD_DIR ARCH=$WRS_ARCH \\
+   make O=$BUILD_DIR ARCH=$KARCH \\
         CROSS_COMPILE=<cross-compile-prefix>
 
   Prefix is usually "<arch>-wrs-linux-gnu-", i.e. powerpc-wrs-linux-gnu-
@@ -209,6 +232,10 @@ while [ $# -gt 0 ]; do
 	    --reconfig)
 		reconfig=t
 		;;
+	    --output|-o|--o)
+		out_dir=$2
+		shift
+		;;
 	    -v) verbose=t
 		;;
 	    *) break
@@ -220,11 +247,12 @@ done
 # an explicit target to configure may have been passed 
 # (whatever is left over). If something wasn't passed, we configure
 # based on the current branch.
-target=$@
+target=$1
+machine=$2
 if [ -z "$target" ]; then
-    echo "[INFO] Finding user(s) of branch \"$CURRENT\""
     target=$CURRENT
 fi
+echo "[INFO] Finding user(s) of branch \"$target\""
 
 # we need to condition the branch. If it is in the form that
 # uses / for inheritance, special processing needs to be done.
@@ -237,27 +265,51 @@ if [ $? -eq 0 ]; then
     # so we can reverse everything and take the second field
     parent=`echo $tgt | rev | cut -d'/' -f2 | rev`
     target=`echo $tgt | rev | cut -d'/' -f1 | rev`
-    full_target=$target-$parent
+    if [ -z $out_dir ]; then
+	out_dir=$target-$parent
+    fi
+    full_tgt=$target-$parent
     META_DIR=meta
 else
-    full_target=$target
+    if [ -z $out_dir ]; then
+	out_dir=$target
+    fi
     parent=`echo $target | rev | cut -d'-' -f1 | rev`
-    # target=`echo $target | cut -d'-' -f1`
+    full_tgt=$target
     META_DIR=wrs
 fi
 
-echo "[INFO] Finding user(s) of target -- $target -- $parent -"
-# Note the space and EOL anchor.  We want to find the SCC file where
-# CURRENT is on the far RHS, i.e. the one that created the branch,
-# and NOT some SCC file that uses the branch as a starting point.
-SCC_LIST=`grep -Rl 'scc_leaf.* '$target'$' ./$META_DIR/cfg/kernel-*cache/bsp/ ./$META_DIR/cfg/meta/obj`
-for s in $SCC_LIST; do 
-    found=`grep -E "scc_leaf.*$parent" $s`
-    if [ -n "$found" ] && [ -z "$found_scc" ]; then
-	found_scc=$s
+if [ -e $META_DIR/top_tgt ]; then
+    SCC_LIST=`cat $META_DIR/top_tgt`
+else
+    echo "[INFO] Finding user(s) of target: $target with parent: $parent"
+    # Note the space and EOL anchor.  We want to find the SCC file where
+    # CURRENT is on the far RHS, i.e. the one that created the branch,
+    # and NOT some SCC file that uses the branch as a starting point
+    # There is an alternate target, where all _ have been replaced by -
+    alt_target=`echo $target | sed 's/_/.*/g'`
+    SCC_LIST=`grep -Rl -e 'scc_leaf.* '$alt_target'$' -e 'scc_leaf.* '$target'$' \
+            ./$META_DIR/cfg/kernel-*cache/bsp/ ./$META_DIR/cfg/meta/obj`
+    for s in $SCC_LIST; do 
+	found=`grep -E "scc_leaf.*$parent" $s`
+	if [ -n "$found" ] && [ -z "$found_scc" ]; then
+	    found_scc=$s
+	fi
+	if [ -n "$found" ]; then
+	    case `basename $s` in
+		$machine*) best_match=$s ;;
+                *) other_match=$s ;;                
+	    esac
+	fi
+    done
+    if [ -n "$best_match" ]; then
+	SCC_LIST=$best_match
+    elif [ -n "$other_match" ]; then
+	SCC_LIST=$other_match
+    else
+	SCC_LIST=$found_scc
     fi
-done
-SCC_LIST=$found_scc
+fi
 
 if [ -z "$SCC_LIST" ]; then
 	echo Error: No BSPs \(scc\) use branch $CURRENT as their endpoint.

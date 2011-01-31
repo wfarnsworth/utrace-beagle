@@ -345,7 +345,7 @@ compile a patch series from a set of scc files, patch lists and includes
  --noauto         Do not automatically compile the dependency chain
  --vars           comma separated list of variables to make available to
                   scc feature scripts. 
-                    eg: WRS_TRIPLET=board-<x>-<y>,PLATFORM=<myplat>
+                    eg: KTRIPLET=board-<x>-<y>,PLATFORM=<myplat>
  -v               run verbosely
  --version        show the scc version
 
@@ -462,7 +462,8 @@ set_kernel_version()
 ##         1 board is not present
 check_board()
 {
-    echo $WRS_BOARD | grep -q $1
+    echo $KMACHINE | grep -q $1
+
     return $?
 }
 
@@ -611,7 +612,7 @@ scc_leaf()
     fi
 }
 
-# example: scc_stage linux-omap-2.6 +wrs_omap_merge
+# example: scc_stage linux-omap-2.6 +omap_merge
 # 
 # Stages a tree for a future merge
 #
@@ -1072,7 +1073,7 @@ do_ctx_mod()
         # TODO: these can be lists of plats, or archs ... could loop
         if [ -n "$plats" ]; then
             # platform specific test and output
-            _dump "   if [ \"\$WRS_PLATFORM\" == \"$plats\" ]; then "
+            _dump "   if [ \"\$PLATFORM\" == \"$plats\" ]; then "
             _dump "      _cmds=\$(echo \"\$_cmds\" | sed 's%^.*$base_patch$%\# _force_branch $active_feature-$force_name force\n\# _patch $work_dir/$out_name%');"
 	    _dump "      _potential_auto_branch=$force_name"
             _dump "   fi"
@@ -1111,7 +1112,7 @@ do_exclude()
 	    _dump "      _potential_auto_branch=$force_name"
             _dump "   fi"
         elif [ -n "$plats" ]; then
-            _dump "   if [ \"\$WRS_PLATFORM\" == \"$plats\" ]; then ";
+            _dump "   if [ \"\$PLATFORM\" == \"$plats\" ]; then ";
             _dump "      _cmds=\$(echo \"\$_cmds\" | sed \"s%^.*$tgt_patch$%\# _force_branch $current_feature-$force_name force\n%\");";
 	    _dump "      _potential_auto_branch=$force_name"
             _dump "   fi"
@@ -1142,7 +1143,7 @@ do_include()
             _dump '`;'
             _dump "   fi"
         elif [ -n "$plats" ]; then
-            _dump "   if [ \"\$WRS_PLATFORM\" == \"$plats\" ]; then "
+            _dump "   if [ \"\$PLATFORM\" == \"$plats\" ]; then "
             _dump -n  "   "
             patch "$tgt_patch"
             _dump '`;'
@@ -1182,7 +1183,7 @@ do_transform()
             _dump "      _potential_auto_branch=$current_feature-force"
             _dump "   fi";
         elif [ -n "$plats" ]; then
-            _dump "   if [ \"\$WRS_PLATFORM\" == \"$plats\" ]; then "
+            _dump "   if [ \"\$PLATFORM\" == \"$plats\" ]; then "
             _dump "      _cmds=\$(echo \"\$_cmds\" | sed s\"$new_sed_expr\");"
             _dump "      _potential_auto_branch=$current_feature-force"
             _dump "   fi"

@@ -1,0 +1,126 @@
+#!/bin/bash
+
+# "createme" script.
+
+#  Copyright (c) 2010 Wind River Systems, Inc.
+
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License version 2 as
+#  published by the Free Software Foundation.
+
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#  See the GNU General Public License for more details.
+
+#  This script must be run from inside a Linux source directory
+
+usage()
+{
+cat << EOF
+
+    createme <arch> <branch> [defconfig]
+
+EOF
+}
+
+meta_dir=meta
+if [ -z "$1" ]; then
+	usage
+	exit
+fi
+
+while [ $# -gt 0 ]; do
+	case "$1" in
+	    --help)
+		usage
+		exit
+		;;
+	    --force)
+		force=t
+		;;
+	    -v) verbose=t
+		;;
+	    *) break
+		;;
+	esac
+	shift
+done
+
+arch=$1
+branch=$2
+defconfig=$3 # might be empty
+CURRENT=`git branch |grep \*|sed 's/^\* //'`
+
+# Steal the wrs data off of the wrs_meta branch, but dont actually
+# change wrs_meta in the process...
+decheckpoint()
+{	
+	kgit-checkpoint -r
+}
+
+# checks and sets
+check_defconfig() {
+	config=$1
+
+	defconfig=`get_defconfig $arch $config`
+}
+
+# checks and creates
+check_branch() {
+	branch=$1
+	defconfig=$2
+
+	ktgt=$branch
+
+	old_pwd=`pwd`
+	git show-ref --quiet --verify -- "refs/heads/$ktgt"
+	if [ $? -eq 1 ]; then
+	    if [ -n "$verbose" ]; then
+		echo "[INFO] branch $branch does not exist ... creating"
+	    fi
+
+            # we need to condition the branch. If it is in the form that
+	    # uses / for inheritance, special processing needs to be done.
+            echo $ktgt | grep -q "/"
+	    if [ $? -eq 0 ]; then
+    	        # remove trailing "/base" that won't be in the .scc files
+    	        # themselves
+		tgt=`echo $ktgt | sed 's%/base$%%'`
+		target=`echo $tgt | rev | cut -d'/' -f1 | rev`
+		parent=`echo $tgt | sed "s%/$target%%"`
+		
+		# parent may be a "base" branch, so we test
+		git show-ref --quiet --verify -- "refs/heads/$parent"
+		if [ $? -eq 1 ]; then
+		    git show-ref --quiet --verify -- "refs/heads/$parent/base"
+		    if [ $? -eq 1 ]; then
+			echo "ERROR. parent branch $parent or $parent/base does not exist"
+			exit 1
+		    else
+			parent="$parent/base"
+		    fi
+		fi
+            else
+		parent=`echo $ktgt | rev | cut -d'-' -f1 | rev`
+	    fi
+
+	    git checkout -b $ktgt $parent
+	
+	    mkdir -p $meta_dir/cfg/meta/obj
+	    cd $meta_dir/cfg/meta/obj
+
+	    # only process the defconfig if we are creating the branch, otherwise, 
+	    # you need to add configuration via "updateme"
+	    if [ -f $defconfig ]; then
+		cp -f $defconfig $old_pwd/../defconfig
+	    fi
+
+	    (cd $old_pwd; find -name 'Kconfig' | sed 's/^.\///' > $meta_dir/cfg/meta/obj/hardware.kcf)
+	fi
+}
+
+
+decheckpoint
+check_defconfig $defconfig
+check_branch $branch $defconfig

@@ -27,7 +27,7 @@ export LC_ALL
 
 meta_dir=meta
 if [ -d $TOP_BUILD_DIR ]; then
-	WRS_DIR=$TOP_BUILD_DIR/build/$LINUX_SRC/$meta_dir
+	WRS_DIR=$LINUX_SRC/$meta_dir
 else
 	TOP_BUILD_DIR=`pwd`
 	WRS_DIR=`pwd`/$meta_dir
@@ -58,7 +58,7 @@ HDW_CFGS=$KCONF_DIR/hdw_frags.txt
 
 if [ ! -s $HDW_CFGS ]; then
 	echo WARNING: Can\'t find any BSP hardware configuration fragments for this BSP.
-	echo WARNING: Looked at $HDW_CFGS in directory: `pwd`
+	echo WARNING: Looked at $HDW_CFGS in directory: $KCONF_DIR
 	exit 0
 fi
 
@@ -231,7 +231,6 @@ if [ -s $KCONF_DIR/specified_non_hdw.cfg ]; then
 	echo
 fi
 
-
 ##########################################################################
 # Check that the list of specified hardware options really made it into
 # the final .config file.  This can be a lifesaver, since if you specified
@@ -242,6 +241,13 @@ fi
 ##########################################################################
 
 rm -f $KCONF_DIR/mismatch.cfg
+if [ ! -e $KCONF_DIR/$KERNEL_CONFIG ]; then
+    KERNEL_CONFIG=`find  $KCONF_DIR -name "*$KERNEL_CONFIG" | head -n1`
+    if [ -n "$KERNEL_CONFIG" ]; then
+	KERNEL_CONFIG=`basename $KERNEL_CONFIG`
+    fi
+fi
+
 for i in `cat $KCONF_DIR/specified_hdw.cfg` ; do
 	REQUESTED_VAL=`grep -w -e $i $KCONF_DIR/$KERNEL_CONFIG`
 	ACTUAL_VAL=`grep -w -e $i $LINUX_BUILD/.config`

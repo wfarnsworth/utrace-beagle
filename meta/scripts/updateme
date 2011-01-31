@@ -1,0 +1,351 @@
+#!/bin/bash
+
+# "updateme" script.
+
+#  Copyright (c) 2010 Wind River Systems, Inc.
+
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of the GNU General Public License version 2 as
+#  published by the Free Software Foundation.
+
+#  This program is distributed in the hope that it will be useful,
+#  but WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#  See the GNU General Public License for more details.
+
+#  This script must be run from inside a Linux source directory
+
+usage()
+{
+cat << EOF
+
+    updateme <dirs>
+
+EOF
+}
+
+if [ -d "wrs" ]; then
+    meta_dir=wrs
+else
+    meta_dir=meta
+fi
+
+if [ -z "$1" ]; then
+	usage
+	exit
+fi
+
+while [ $# -gt 0 ]; do
+	case "$1" in
+	    --help)
+		usage
+		exit
+	        ;;
+	    --features)
+		cmd_line_features="$2"
+		shift
+		;;
+	    --force)
+		force=t
+		;;
+	    -v) verbose=t
+		;;
+	    *) break
+		;;
+	esac
+	shift
+done
+
+# arg1 is the ARCH
+arch=$1
+# arg2 is the machine
+machine=$2
+shift
+shift
+
+# everything else is potential features
+command_line_dirs=$@
+CURRENT=`git branch |grep \*|sed 's/^\* //'`
+
+gen_dirs() {
+	top_dir=$1
+
+	potential=`find $top_dir -maxdepth 3 -type d -name kernel*cache`
+	for dir in $potential; do
+	    search_dirs="$search_dirs $dir"
+	    includes="$includes -I $dir"
+	done
+}
+
+# searches for extra files to build
+find_features() {
+	dirs=$@
+
+	for d in $dirs; do
+	    potential=`find $d -maxdepth 1 -type f -name *.scc`
+	    extra_features="$extra_features $potential"
+	done
+}
+
+# searches for extra configs to include, only if they haven't
+# been pulled into a .scc file already
+find_configs() {
+	dirs=$@
+	
+	# defconfigs should be found first, so fragements can tweak
+	# settings
+	for d in $dirs; do
+	    potential=`find $d -maxdepth 1 -type f -name defconfig`
+	    scc_files=`find $d -maxdepth 1 -type f -name *.scc` 
+	    for c in $potential; do
+		b=`basename $c`
+		f=`readlink -f $c`
+	    	# check to see if a .scc file already includes the fragement
+		if [ -n "$scc_files" ]; then
+			grep $b $d/*.scc -q
+			if [ $? -ne 0 ]; then
+		    		extra_cfgs="$extra_cfgs $f"
+			fi
+		else
+			extra_cfgs="$extra_cfgs $f"
+		fi
+	    done
+	done
+
+	for d in $dirs; do
+	    potential=`find $d -maxdepth 1 -type f -name *.cfg`
+	    scc_files=`find $d -maxdepth 1 -type f -name *.scc` 
+	    for c in $potential; do
+		b=`basename $c`
+		f=`readlink -f $c`
+	    	# check to see if a .scc file already includes the fragement
+		if [ -n "$scc_files" ]; then
+			grep $b $d/* -q
+			if [ $? -ne 0 ]; then
+		    		extra_cfgs="$extra_cfgs $f"
+			fi
+		else
+			extra_cfgs="$extra_cfgs $f"
+		fi
+	    done
+	done
+}
+
+# searches for extra patches to include, only if they haven't
+# been pulled into a .scc file already
+find_patches() {
+	dirs=$@
+	
+	for d in $dirs; do
+	    potential=`find $d -maxdepth 1 -type f -name *.patch`
+	    potential="$potential `find $d -maxdepth 1 -type f -name *.diff`"
+	    potential="$potential `find $d -maxdepth 1 -type f -name *.mbox`"
+	    for c in $potential; do
+		b=`basename $c`
+		f=`readlink -f $c`
+	    	# check to see if a .scc file already includes the patch
+		grep $b $d/* -q
+		if [ $? -ne 0 ]; then
+		    extra_patches="$extra_patches $f"
+		fi
+	    done
+	done
+}
+
+do_compile_prep() {
+	top_dir=$1
+
+	mkdir -p $meta_dir/cfg/meta/obj
+	(cd $meta_dir/cfg/meta/obj
+	    rm -f *.sco
+	)
+
+	# updates 'includes' and 'search_dirs'
+	gen_dirs $top_dir
+	includes="-I $top_dir $includes"
+	search_dirs="$top_dir $search_dirs"
+}
+
+search_includes()
+{
+	target=$1
+	parent=$2
+	found_scc=
+
+	# Note the space and EOL anchor.  We want to find the SCC file where
+	# CURRENT is on the far RHS, i.e. the one that created the branch,
+	# and NOT some SCC file that uses the branch as a starting point.
+	# There is an alternate target, where all _ have been replaced by -
+	alt_target=`echo $target | sed 's/_/.*/g'`
+	SCC_LIST=`find $search_dirs -name '*.scc' | xargs grep -l -e 'scc_leaf.* '$target'$' -e 'scc_leaf.* '$alt_target'$' | sort | uniq`
+	for s in $SCC_LIST; do 
+		found=`grep -E "scc_leaf.*$parent" $s`
+    		if [ -n "$found" ]; then
+			found_scc="$found_scc $s"
+    		fi
+	done	
+
+	echo "$found_scc"
+}
+
+do_update() {
+	branch=$1
+	top_dir=$2
+
+	# we need to condition the branch. If it is in the form that
+	# uses / for inheritance, special processing needs to be done.
+	echo $branch | grep -q "/"
+	if [ $? -eq 0 ]; then
+	    # remove trailing "/base" that won't be in the .scc files themselves
+	    tgt=`echo $branch | sed 's%/base$%%'`
+	    # the parent branch is the second to last, i.e. standard/common_pc
+	    # so we can reverse everything and take the second field
+	    parent=`echo $tgt | rev | cut -d'/' -f2 | rev`
+	    short_branchname=`echo $tgt | rev | cut -d'/' -f1 | rev`
+	    ktgt=$short_branchname-$parent
+	else
+	    ktgt=$branch
+	    short_branchname=$branch
+	    parent=`echo $ktgt | rev | cut -d'-' -f1 | rev`
+	fi
+
+	top_tgt=`search_includes $short_branchname $parent`
+	# refine the search to the $machine if we have more than one hit
+	for tgt in $top_tgt; do
+	    case `basename $tgt` in
+		$machine*) best_match=$tgt ;;
+                *) other_match=$tgt ;;                
+	    esac
+	done
+	top_tgt=$best_match
+	if [ -z $top_tgt ]; then
+	    top_tgt=$other_match
+	fi
+
+        # if there isn't a target .. we'll need to create one
+	if [ -z "$top_tgt" ]; then
+	    target=${ktgt%-*}
+
+	    # we need to generate a baseline configuration
+	    (cd $meta_dir/cfg/meta/obj
+		echo "# auto generated BSP file" > $ktgt.scc
+		echo "define KMACHINE $target" >> $ktgt.scc
+		echo "define KTYPE    $parent" >> $ktgt.scc
+		echo "define KARCH    $arch" >> $ktgt.scc
+		echo "" >> $ktgt.scc
+
+		echo "include ktypes/$parent" >> $ktgt.scc
+		echo "branch $short_branchname" >> $ktgt.scc
+	    )
+
+	    top_tgt=$meta_dir/cfg/meta/obj/$ktgt.scc
+	fi
+
+	# store the name of the top level .scc file for future reference
+	echo $top_tgt > $meta_dir/top_tgt
+
+	# this builds and applies the meta-series
+	( cd $meta_dir/cfg/meta/obj
+	    if [ -n "$extra_cfgs" ]; then
+		for c in $extra_cfgs; do
+		    b=`basename $c`
+		    cp $c .
+		    echo "kconf non-hardware $b" >> auto_feat.scc
+		done
+	    
+		extra_features="$extra_features auto_feat.scc"
+	    fi
+
+	    if [ -n "$extra_patches" ]; then
+		for c in $extra_patches; do
+		    b=`basename $c`
+		    cp $c .
+		    echo "patch $b" >> auto_feat.scc
+		done
+	    
+		echo "$extra_features" | grep -q auto_feat.scc
+		if [ $? -ne 0 ]; then
+		    extra_features="$extra_features auto_feat.scc"
+		fi
+	    fi
+
+	    scc -o $ktgt $includes $top_tgt $extra_features $addon_features
+
+	    if [ -e "$ktgt" ]; then
+		bash ./$ktgt > ../$ktgt-meta
+	    else
+		echo "ERROR. Could not find an excutable target for $branch"
+	    fi
+	)
+}
+
+process_args()
+{
+	args=$@
+
+	for a in $args; do
+		if [ -d $a ]; then
+			feature_dirs="$feature_dirs $a"
+		else
+			features_to_find="$features_to_find $a"	
+		fi
+	done
+}
+
+
+_strip_ext()
+{
+    # this isn't quite "basename" we want the full
+    # path, just no extension, i.e. without basename's
+    # habit of removing the last element no matter what
+    local name=$1
+    local ext=$2
+
+    if [ -n "$ext" ]; then
+	echo "$name" | sed "s%$ext$%%"
+    else
+	echo $name
+    fi
+}
+
+do_addon_features()
+{
+	feats=$@
+
+	for f in $feats; do
+		for d in $search_dirs; do
+		        search_feat=`_strip_ext $f .scc`
+			potential=`find $d | grep -E ".*$search_feat.*\.scc"`
+			if [ -n "$potential" ]; then
+				addon_features="$addon_features $potential"
+			else
+				if [ -e "$d/$f" ]; then
+				        # if it is a directory, only pass the dir name.
+					if [ -d "$d/$f" ]; then
+						addon_features="$addon_features $f"
+					else
+						addon_features="$addon_features $d/$f"
+					fi
+				fi
+			fi
+		done
+	done
+}
+
+
+# $PWD is the Linux src directory
+linux_src_dir=`pwd`
+
+do_compile_prep $linux_src_dir
+
+# sorts the command line options and returns "feature_dirs" and 
+# "features_to_find"
+process_args $command_line_dirs
+
+find_features $feature_dirs
+find_configs $feature_dirs
+find_patches $feature_dirs
+
+do_addon_features $cmd_line_features $features_to_find
+
+do_update $CURRENT $linux_src_dir

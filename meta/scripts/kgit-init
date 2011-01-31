@@ -199,14 +199,14 @@ fi
 
 # figure out what type of type destination repository we are creating
 new_repo=
-existing_but_not_wrs_repo=
+existing_repo_no_metadata=
 existing_repo=
 if [ -d "$dest/.git" ]; then
     x=`cd $dest; git show-ref $meta_branch`
     if [ -n "$x" ]; then
 	existing_repo=t
     else
-	existing_but_not_wrs_repo=t
+	existing_repo_no_metadata=t
     fi
 else
     # this means we are starting a repository from scratch
@@ -284,7 +284,7 @@ if [ -n "$new_repo" ]; then
 	    	git checkout -f $content_branch
 	    	existing_repo=t
 	    	new_repo=
-	    	existing_but_not_wrs_repo=
+	    	existing_repo_no_metadata=
 	    fi
 	else
 	    git clone $clone_opt $src $dest
@@ -316,7 +316,7 @@ if [ -n "$new_repo" ]; then
     fi
 fi
 
-if [ -n "$new_repo" ] || [ -n "$existing_but_not_wrs_repo" ]; then
+if [ -n "$new_repo" ] || [ -n "$existing_but_flat_repo" ]; then
     if [ ! -d "$meta_dir/cfg/meta/obj" ]; then
 	mkdir -p $meta_dir/cfg/meta/obj
     fi
