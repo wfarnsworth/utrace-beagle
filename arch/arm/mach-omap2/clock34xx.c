@@ -18,6 +18,7 @@
 #undef DEBUG
 
 #include <linux/kernel.h>
+#include <linux/module.h>
 #include <linux/clk.h>
 #include <linux/io.h>
 
@@ -93,6 +94,9 @@ const struct clkops clkops_omap3430es2_dss_usbhost_wait = {
 	.find_idlest	= omap3430es2_clk_dss_usbhost_find_idlest,
 	.find_companion = omap2_clk_dflt_find_companion,
 };
+
+unsigned long long cpu_hz;
+EXPORT_SYMBOL(cpu_hz);
 
 /**
  * omap3430es2_clk_hsotgusb_find_idlest - return CM_IDLEST info for HSOTGUSB
