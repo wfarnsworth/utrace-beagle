@@ -440,7 +440,7 @@ static int query_tnc(
 	platform_context->did = context->device_context.did;
 	context->platform_context = (void *)&platform_context_tnc;
 
-	OS_PTHREAD_MUTEX_INIT(&platform_context_tnc.flip_mutex, NULL);
+	sema_init(&platform_context_tnc.flip_mutex, 1);
 
 	/* find and store the bridge dev since we will be using it a lot
 	 * in the init modules */

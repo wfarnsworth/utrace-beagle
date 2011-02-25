@@ -80,7 +80,6 @@ static int emgd_fb_blank(int blank, struct fb_info *info);
 
 static const struct drm_mode_config_funcs emgd_mode_funcs = {
 	.fb_create = emgd_fb_create,
-	.fb_changed = emgd_fb_probe,
 };
 
 static const struct drm_framebuffer_funcs emgd_fb_funcs = {
@@ -120,8 +119,8 @@ static int emgd_crtc_cursor_set(struct drm_crtc *crtc,
 		uint32_t width, uint32_t height);
 static int emgd_crtc_cursor_move(struct drm_crtc *crtc, int x, int y);
 static void emgd_crtc_gamma_set(struct drm_crtc *crtc,
-		unsigned short *red, unsigned short *green, unsigned short *blue,
-		uint32_t size);
+		u16 *red, u16 *green, u16 *blue,
+		uint32_t start, uint32_t size);
 static void emgd_crtc_destroy(struct drm_crtc *crtc);
 
 
@@ -270,6 +269,7 @@ void emgd_ms_init(struct drm_device *dev)
 	 * This is a lot of the code that impliments KMS.
 	 */
 
+	emgd_fb_probe(dev);
 }
 
 
@@ -298,9 +298,7 @@ EXPORT_SYMBOL(emgd_fb_probe);
  */
 int emgd_fb_remove(struct drm_device *dev, struct drm_framebuffer *fb)
 {
-	struct fb_info *info;
-
-	info = fb->fbdev;
+	struct fb_info *info = NULL;
 
 	if (info) {
 		unregister_framebuffer(info);
@@ -371,7 +369,6 @@ static struct drm_framebuffer *emgd_fb_create(struct drm_device *dev,
 	info->fbops = (struct fb_ops*)&emgd_fb_ops; 
 	info->screen_base = 0;  /* FIXME: This is kernel memory address */
 	info->screen_size = emgd_fb->size;
-	info->pseudo_palette = emgd_fb->base.pseudo_palette;
 
 	info->var.xres_virtual = emgd_fb->base.width;
 	info->var.yres_virtual = emgd_fb->base.height;
@@ -447,7 +444,6 @@ static struct drm_framebuffer *emgd_fb_create(struct drm_device *dev,
 
 	register_framebuffer(info);
 
-	emgd_fb->base.fbdev = info;
 	par->emgd_fb = emgd_fb;
 	par->dev = dev;
 
@@ -466,10 +462,6 @@ static void emgd_fb_destroy (struct drm_framebuffer *fb)
 	struct drm_device *dev = fb->dev;
 
 	/* TODO: Unmap any pages mapped to the GTT */
-
-	if (fb->fbdev) {
-		emgd_fb_remove(dev, fb);
-	}
 
 	drm_framebuffer_cleanup(fb);
 
@@ -614,8 +606,8 @@ static int emgd_crtc_cursor_move(struct drm_crtc *crtc, int x, int y)
 }
 
 static void emgd_crtc_gamma_set(struct drm_crtc *crtc,
-		unsigned short *red, unsigned short *green, unsigned short *blue,
-		uint32_t size)
+		u16 *red, u16 *green, u16 *blue,
+		uint32_t start, uint32_t size)
 {
 	printk(KERN_ALERT "emgd_crtc_gamma_set: STUB\n");
 }

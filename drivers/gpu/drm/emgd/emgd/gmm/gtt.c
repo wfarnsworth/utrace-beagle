@@ -38,8 +38,8 @@
 #define ST_BIT	0x00000004 /* bit2- stolen memory bit */
 #define PSB_PTE_VALID  0x0001
 
-static DECLARE_MUTEX(client_sem);
-static DECLARE_MUTEX(gtt_sem);
+static DEFINE_SEMAPHORE(client_sem);
+static DEFINE_SEMAPHORE(gtt_sem);
 
 struct client_list_struct {
 	struct list_head list;

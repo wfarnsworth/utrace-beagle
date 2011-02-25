@@ -348,7 +348,7 @@ static int query_plb(
 
 	context->platform_context = (void *)&platform_context_plb;
 
-	OS_PTHREAD_MUTEX_INIT(&platform_context_plb.flip_mutex, NULL);
+	sema_init(&platform_context_plb.flip_mutex, 1);
 
 	/*
 	 * Current specs indicate that PLB has only one PCI function.
