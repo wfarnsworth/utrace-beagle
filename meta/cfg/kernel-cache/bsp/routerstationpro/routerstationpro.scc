@@ -1,4 +1,6 @@
 kconf hardware routerstationpro.cfg
+include cfg/usb-mass-storage.scc
+
 patch Add-arch-suport-for-ar71xx.patch
 patch Add-include-file-support-ar71xx.patch
 patch Add-gpio-support-for-nxp_74hc153.patch
