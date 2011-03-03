@@ -38,9 +38,12 @@
  */
 typedef struct _emgd_framebuffer {
 	struct drm_framebuffer base;
+	struct fb_info *info;
 	unsigned long size;
 	unsigned long offset;
 } emgd_framebuffer_t;
+
+#define to_emgd_framebuffer(x) container_of(x, struct _emgd_framebuffer, base)
 
 typedef struct _emgdfb_par {
 	struct drm_device *dev;
@@ -298,7 +301,8 @@ EXPORT_SYMBOL(emgd_fb_probe);
  */
 int emgd_fb_remove(struct drm_device *dev, struct drm_framebuffer *fb)
 {
-	struct fb_info *info = NULL;
+	emgd_framebuffer_t *emgd_fb = to_emgd_framebuffer(fb);
+	struct fb_info *info= emgd_fb->info;
 
 	if (info) {
 		unregister_framebuffer(info);
@@ -444,6 +448,7 @@ static struct drm_framebuffer *emgd_fb_create(struct drm_device *dev,
 
 	register_framebuffer(info);
 
+	emgd_fb->info = info;
 	par->emgd_fb = emgd_fb;
 	par->dev = dev;
 
@@ -459,9 +464,14 @@ static struct drm_framebuffer *emgd_fb_create(struct drm_device *dev,
  */
 static void emgd_fb_destroy (struct drm_framebuffer *fb)
 {
+	emgd_framebuffer_t *emgd_fb = to_emgd_framebuffer(fb);
 	struct drm_device *dev = fb->dev;
 
 	/* TODO: Unmap any pages mapped to the GTT */
+
+	if (emgd_fb->info) {
+		emgd_fb_remove(dev, fb);
+	}
 
 	drm_framebuffer_cleanup(fb);
 
