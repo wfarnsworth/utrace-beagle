@@ -1,0 +1,16 @@
+#
+# Serial device configuration
+#
+
+menu "More Serial drivers"
+	depends on HAS_IOMEM
+
+config SERIAL_PCH_UART
+	tristate "Intel EG20T PCH UART"
+	select SERIAL_CORE
+	depends on PCI
+	help
+	  This driver is for PCH(Platform controller Hub) UART of Intel EG20T
+	  which is an IOH(Input/Output Hub) for x86 embedded processor.
+	  Enabling PCH_DMA, this PCH UART works as DMA mode.
+endmenu

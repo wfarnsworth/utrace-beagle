@@ -89,5 +89,5 @@ obj-$(CONFIG_SERIAL_ALTERA_UART) += altera_uart.o
 obj-$(CONFIG_SERIAL_MRST_MAX3110)	+= mrst_max3110.o
 obj-$(CONFIG_SERIAL_MFD_HSU)	+= mfd.o
 obj-$(CONFIG_SERIAL_OMAP) += omap-serial.o
-obj-$(CONFIG_SERIAL_PCH_UART)	+= pch_uart.o
+
 
