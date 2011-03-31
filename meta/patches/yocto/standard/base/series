@@ -20,3 +20,4 @@ links/kernel-cache/features/vfat/FAT-Add-CONFIG_VFAT_FS_NO_DUALNAMES-option.patc
 links/kernel-cache/features/vfat/FAT-Add-CONFIG_VFAT_NO_CREATE_WITH_LONGNAMES-option.patch
 links/kernel-cache/features/vfat/FAT-Added-FAT_NO_83NAME.patch
 links/kernel-cache/ktypes/standard/perf-force-include-of-stdbool.h.patch
+links/kernel-cache/patches/boot/NFS-allow-nfs-root-mount-to-use-alternate-rpc-ports.patch

@@ -1,4 +1,4 @@
-include ktypes/wrs_base
+include ktypes/base
 branch standard
 
 kconf non-hardware standard.cfg
@@ -20,9 +20,6 @@ tag systemtap
 # include features/ocd/ocd.scc
 # tag ocd
 
-# #include patches/sched/sched.scc
-# #tag sched
-
 include arch/arm/arm.scc
 tag arm
 
@@ -38,7 +35,7 @@ include features/debugfs/debugfs.scc
 
 include features/ftrace/ftrace.scc
 
-include patches/wrs_patches.scc
+include patches/patches.scc
 
 #include features/ieee_float/ieee_float.scc
 #tag ieee_float
@@ -64,10 +61,6 @@ include patches/wrs_patches.scc
 #include features/kexec/kexec.scc
 #tag kexec
 
-#include features/ftrace/ftrace.scc
-#include features/early-ftrace/early-ftrace.scc
-#tag ftrace
-
 #include features/ocf/ocf.scc
 #tag ocf
 
@@ -88,17 +81,6 @@ include features/vfat/vfat.scc
 #include features/ramconsole/ramconsole.scc
 #include features/pramfs/pramfs.scc
 
-# patch x86-add-TIF_32BIT-compatibility-define.patch
-# patch MIPS-CGL-Enable-kernel-snapshots.patch
-
 # include features/davinci/davinci.scc
 
-# include features/l2tpv3/l2tpv3.scc
-# tag l2tpv3
-
-# scc_hook prepatch scripts/rr-fix
-
-# in mainline: patch hayes-remove-obselete-ioctls.patch
 patch perf-force-include-of-stdbool.h.patch
-
-# in mainline: patch selinux-fix-parallel-compile-error.patch
