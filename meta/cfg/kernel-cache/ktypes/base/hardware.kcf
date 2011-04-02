@@ -169,7 +169,6 @@ drivers/i2c/algos/Kconfig
 drivers/i2c/busses/Kconfig
 drivers/i2c/Kconfig
 drivers/ide/Kconfig
-drivers/ieee1394/Kconfig
 drivers/infiniband/hw/amso1100/Kconfig
 drivers/infiniband/hw/cxgb3/Kconfig
 drivers/infiniband/hw/ehca/Kconfig
@@ -237,7 +236,6 @@ drivers/media/video/saa7134/Kconfig
 drivers/media/video/sn9c102/Kconfig
 drivers/media/video/usbvideo/Kconfig
 drivers/media/video/usbvision/Kconfig
-drivers/media/video/zc0301/Kconfig
 drivers/memstick/core/Kconfig
 drivers/memstick/host/Kconfig
 drivers/memstick/Kconfig
