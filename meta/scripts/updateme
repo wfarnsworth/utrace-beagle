@@ -41,6 +41,11 @@ while [ $# -gt 0 ]; do
 		usage
 		exit
 	        ;;
+	    --feature)
+		cmd_line_features="$cmd_line_features $2"
+		shift
+		;;
+            # depreciated. do not use
 	    --features)
 		cmd_line_features="$2"
 		shift
@@ -63,7 +68,7 @@ machine=$2
 shift
 shift
 
-# everything else is potential features
+# everything else is features
 command_line_dirs=$@
 CURRENT=`git branch |grep \*|sed 's/^\* //'`
 
@@ -230,12 +235,11 @@ do_update() {
 	    (cd $meta_dir/cfg/meta/obj
 		echo "# auto generated BSP file" > $ktgt.scc
 		echo "define KMACHINE $target" >> $ktgt.scc
-		echo "define KTYPE    $parent" >> $ktgt.scc
-		echo "define KARCH    $arch" >> $ktgt.scc
+		echo "define KTYPE $parent" >> $ktgt.scc
+		echo "define KARCH $arch" >> $ktgt.scc
 		echo "" >> $ktgt.scc
 
-		echo "include ktypes/$parent" >> $ktgt.scc
-		echo "branch $short_branchname" >> $ktgt.scc
+		echo "scc_leaf ktypes/$parent $short_branchname" >> $ktgt.scc
 	    )
 
 	    top_tgt=$meta_dir/cfg/meta/obj/$ktgt.scc

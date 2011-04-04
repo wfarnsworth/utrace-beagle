@@ -33,6 +33,8 @@ else
 	WRS_DIR=`pwd`/$meta_dir
 fi
 
+# remove trailing "/base" that won't be in the .scc files themselves
+BRANCH=`echo $BRANCH | sed 's%/base$%%'`
 KCONF_DIR=$WRS_DIR/cfg/$BRANCH
 
 # Note: these 4 files below are created by generate_cfg.
