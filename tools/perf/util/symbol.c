@@ -1481,8 +1481,8 @@ int dso__load(struct dso *self, struct map *map, symbol_filter_t filter)
 			snprintf(name, size, "%s", self->long_name);
 			break;
 		case DSO__ORIG_GUEST_KMODULE:
-			if (map->groups && map->groups->machine)
-				root_dir = map->groups->machine->root_dir;
+			if (map->groups && machine)
+				root_dir = machine->root_dir;
 			else
 				root_dir = "";
 			snprintf(name, size, "%s%s", root_dir, self->long_name);
