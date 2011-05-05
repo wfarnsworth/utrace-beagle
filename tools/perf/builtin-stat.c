@@ -211,7 +211,7 @@ static void read_counter(int counter)
 	u64 count[3], single_count[3];
 	int cpu;
 	size_t res, nv;
-	int scaled;
+	int scaled __used;
 	int i, thread;
 
 	count[0] = count[1] = count[2] = 0;
