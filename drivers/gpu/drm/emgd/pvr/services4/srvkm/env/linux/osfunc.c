@@ -20,10 +20,6 @@
  THE SOFTWARE.
  ******************************************************************************/
 
-#ifndef AUTOCONF_INCLUDED
- #include <linux/config.h>
-#endif
-
 #include <linux/version.h>
 #include <asm/io.h>
 #include <asm/page.h>
@@ -1692,12 +1688,7 @@ PVRSRV_ERROR OSPCIResumeDev(PVRSRV_PCI_DEV_HANDLE hPVRPCI)
             return PVRSRV_ERROR_GENERIC;
     }
 
-    err = pci_restore_state(psPVRPCI->psPCIDev);
-    if (err != 0)
-    {
-        PVR_DPF((PVR_DBG_ERROR, "OSPCIResumeDev: pci_restore_state failed (%d)", err));
-        return PVRSRV_ERROR_GENERIC;
-    }
+    pci_restore_state(psPVRPCI->psPCIDev);
 
     err = pci_enable_device(psPVRPCI->psPCIDev);
     if (err != 0)
@@ -1752,7 +1743,7 @@ static TIMER_CALLBACK_DATA sTimers[OS_MAX_TIMERS];
 #if defined(PVR_LINUX_TIMERS_USING_WORKQUEUES)
 DEFINE_MUTEX(sTimerStructLock);
 #else
-static spinlock_t sTimerStructLock = SPIN_LOCK_UNLOCKED;
+static DEFINE_SPINLOCK(sTimerStructLock);
 #endif
 
 static void OSTimerCallbackBody(TIMER_CALLBACK_DATA *psTimerCBData)

@@ -84,7 +84,7 @@ static unsigned long vblank_interrupt_state = 0;
 /* Spin lock for synchronization of the vblank_interrupt_state variable,
  * between the VBlank interrupt handler and the non-interrupt handler code:
  */
-static spinlock_t vblank_lock = SPIN_LOCK_UNLOCKED;
+static DEFINE_SPINLOCK(vblank_lock);
 
 
 

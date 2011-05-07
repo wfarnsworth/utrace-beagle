@@ -21,10 +21,6 @@
  ******************************************************************************/
 
   
-#ifndef AUTOCONF_INCLUDED
- #include <linux/config.h>
-#endif
-
 #include <asm/io.h>
 #include <asm/uaccess.h>
 #include <linux/kernel.h>
@@ -56,7 +52,7 @@ static IMG_CHAR gszBufferIRQ[PVR_MAX_MSG_LEN + 1];
 
 static struct mutex gsDebugMutexNonIRQ;
 
-static spinlock_t gsDebugLockIRQ = SPIN_LOCK_UNLOCKED;
+static DEFINE_SPINLOCK(gsDebugLockIRQ);
 
 #define	USE_SPIN_LOCK (in_interrupt() || !preemptible())
 
