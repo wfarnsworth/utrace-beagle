@@ -1955,6 +1955,10 @@ static struct drm_driver driver = {
 		.poll    = drm_poll,
 		.fasync  = drm_fasync,
 	},
+	.pci_driver = {
+		.name     = DRIVER_NAME,
+		.id_table = pciidlist,
+	},
 	.name                = DRIVER_NAME,
 	.desc                = DRIVER_DESC,
 	.date                = DRIVER_DATE,
@@ -1976,7 +1980,7 @@ static int __init emgd_init(void) {
 
 	EMGD_TRACE_ENTER;
 	driver.num_ioctls = emgd_max_ioctl;
-	ret = drm_pci_init(&driver, &emgd_pci_driver);
+	ret = drm_init(&driver);
 	PVRDPFInit();
 	printk(KERN_INFO "[EMGD] drm_init() returning %d\n", ret);
 	EMGD_TRACE_EXIT;
@@ -1988,7 +1992,7 @@ static int __init emgd_init(void) {
  */
 static void __exit emgd_exit(void) {
 	EMGD_TRACE_ENTER;
-	drm_pci_exit(&driver, &emgd_pci_driver);
+	drm_exit(&driver);
 	EMGD_TRACE_EXIT;
 }
 
