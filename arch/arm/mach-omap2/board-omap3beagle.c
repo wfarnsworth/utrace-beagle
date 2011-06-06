@@ -937,6 +937,7 @@ static void __init omap3_beagle_init(void)
 		gpio_export(162, 1);
 	}
 
+#if defined(CONFIG_WL1271) || defined(CONFIG_WL1271_MODULE)
 	if(!strcmp(expansionboard_name, "bbtoys-wifi"))
 	{
 		if (wl12xx_set_platform_data(&omap_beagle_wlan_data))
@@ -944,6 +945,7 @@ static void __init omap3_beagle_init(void)
 		printk(KERN_INFO "Beagle expansionboard: registering wl12xx platform device\n");
 		platform_device_register(&omap_vwlan_device);
 	}
+#endif
 
 	usb_musb_init(&musb_board_data);
 	usb_ehci_init(&ehci_pdata);
