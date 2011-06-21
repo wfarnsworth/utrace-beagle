@@ -31,7 +31,6 @@ tag powerpc
 
 include features/hrt/hrt.scc
 
-include features/debugfs/debugfs.scc
 
 include features/ftrace/ftrace.scc
 
@@ -81,5 +80,9 @@ include features/vfat/vfat.scc
 #include features/pramfs/pramfs.scc
 
 # include features/davinci/davinci.scc
+
+## cfg block section
+include cfg/devtmpfs.scc
+include features/debugfs/debugfs.scc
 
 patch perf-force-include-of-stdbool.h.patch
