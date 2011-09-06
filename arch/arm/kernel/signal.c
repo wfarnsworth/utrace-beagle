@@ -676,6 +676,8 @@ handle_signal(unsigned long sig, struct k_sigaction *ka,
 	recalc_sigpending();
 	spin_unlock_irq(&tsk->sighand->siglock);
 
+	tracehook_signal_handler(sig, info, ka, regs, 0);
+
 	return 0;
 }
 
