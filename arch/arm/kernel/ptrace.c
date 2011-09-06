@@ -846,25 +846,33 @@ static int iwmmxt_set(struct task_struct *target,
 /*
  * Get the child Crunch state.
  */
-static int ptrace_getcrunchregs(struct task_struct *tsk, void __user *ufp)
+static int crunch_get(struct task_struct *target,
+		      const struct user_regset *regset,
+		      unsigned int pos, unsigned int count,
+		      void *kbuf, void __user *ubuf)
 {
-	struct thread_info *thread = task_thread_info(tsk);
+	struct thread_info *thread = task_thread_info(target);
 
 	crunch_task_disable(thread);  /* force it to ram */
-	return copy_to_user(ufp, &thread->crunchstate, CRUNCH_SIZE)
-		? -EFAULT : 0;
+
+	return user_regset_copyout(&pos, &count, &kbuf, &ubuf,
+				   &thread->crunchstate, 0, CRUNCH_SIZE);
 }
 
 /*
  * Set the child Crunch state.
  */
-static int ptrace_setcrunchregs(struct task_struct *tsk, void __user *ufp)
+static int crunch_set(struct task_struct *target,
+		      const struct user_regset *regset,
+		      unsigned int pos, unsigned int count,
+		      const void *kbuf, const void __user *ubuf)
 {
-	struct thread_info *thread = task_thread_info(tsk);
+	struct thread_info *thread = task_thread_info(target);
 
 	crunch_task_release(thread);  /* force a reload */
-	return copy_from_user(&thread->crunchstate, ufp, CRUNCH_SIZE)
-		? -EFAULT : 0;
+
+	return user_regset_copyin(&pos, &count, &kbuf, &ubuf,
+				  &thread->crunchstate, 0, CRUNCH_SIZE);
 }
 #endif
 
@@ -982,6 +990,9 @@ enum {
 #ifdef CONFIG_IWMMXT
 	REGSET_IWMMXT,
 #endif
+#ifdef CONFIG_CRUNCH
+	REGSET_CRUNCH,
+#endif
 };
 
 static const struct user_regset arm_regsets[] = {
@@ -1010,6 +1021,13 @@ static const struct user_regset arm_regsets[] = {
 		.n = sizeof(struct iwmmxt_struct) / sizeof(int),
 		.size = sizeof(int), .align = sizeof(int),
 		.active = iwmmxt_active, .get = iwmmxt_get, .set = iwmmxt_set
+	},
+#endif
+#ifdef CONFIG_CRUNCH
+	[REGSET_CRUNCH] = {
+		.n = sizeof(struct crunch_state) / sizeof(int),
+		.size = sizeof(int), .align = sizeof(int),
+		.get = crunch_get, .set = crunch_set
 	},
 #endif
 };
@@ -1305,12 +1323,14 @@ long arch_ptrace(struct task_struct *child, long request,
 
 #ifdef CONFIG_CRUNCH
 	case PTRACE_GETCRUNCHREGS:
-		ret = ptrace_getcrunchregs(child, datap);
-		break;
+		return copy_regset_from_user(child, &user_arm_view,
+					     REGSET_CRUNCH, 0, CRUNCH_SIZE,
+					     datap);
 
 	case PTRACE_SETCRUNCHREGS:
-		ret = ptrace_setcrunchregs(child, datap);
-		break;
+		return copy_regset_from_user(child, &user_arm_view,
+					     REGSET_CRUNCH, 0, CRUNCH_SIZE,
+					     datap);
 #endif
 
 #ifdef CONFIG_VFP
