@@ -803,29 +803,41 @@ static int user_fp_set(struct task_struct *target,
 /*
  * Get the child iWMMXt state.
  */
-static int ptrace_getwmmxregs(struct task_struct *tsk, void __user *ufp)
+static int iwmmxt_get(struct task_struct *target,
+		      const struct user_regset *regset,
+		      unsigned int pos, unsigned int count,
+		      void *kbuf, void __user *ubuf)
 {
-	struct thread_info *thread = task_thread_info(tsk);
+	struct thread_info *thread = task_thread_info(target);
 
 	if (!test_ti_thread_flag(thread, TIF_USING_IWMMXT))
 		return -ENODATA;
 	iwmmxt_task_disable(thread);  /* force it to ram */
-	return copy_to_user(ufp, &thread->fpstate.iwmmxt, IWMMXT_SIZE)
-		? -EFAULT : 0;
+	return user_regset_copyout(&pos, &count, &kbuf, &ubuf,
+				   &thread->fpstate.iwmmxt, 0, IWMMXT_SIZE);
+}
+
+static int iwmmxt_active(struct task_struct *target,
+			 const struct user_regset *regset)
+{
+	return test_tsk_thread_flag(target, TIF_USING_IWMMXT) ? regset->n : 0;
 }
 
 /*
  * Set the child iWMMXt state.
  */
-static int ptrace_setwmmxregs(struct task_struct *tsk, void __user *ufp)
+static int iwmmxt_set(struct task_struct *target,
+		      const struct user_regset *regset,
+		      unsigned int pos, unsigned int count,
+		      const void *kbuf, const void __user *ubuf)
 {
-	struct thread_info *thread = task_thread_info(tsk);
+	struct thread_info *thread = task_thread_info(target);
 
 	if (!test_ti_thread_flag(thread, TIF_USING_IWMMXT))
 		return -EACCES;
 	iwmmxt_task_release(thread);  /* force a reload */
-	return copy_from_user(&thread->fpstate.iwmmxt, ufp, IWMMXT_SIZE)
-		? -EFAULT : 0;
+	return user_regset_copyin(&pos, &count, &kbuf, &ubuf,
+				  &thread->fpstate.iwmmxt, 0, IWMMXT_SIZE);
 }
 
 #endif
@@ -967,6 +979,9 @@ enum {
 #ifdef CONFIG_VFP
 	REGSET_VFP,
 #endif
+#ifdef CONFIG_IWMMXT
+	REGSET_IWMMXT,
+#endif
 };
 
 static const struct user_regset arm_regsets[] = {
@@ -987,6 +1002,13 @@ static const struct user_regset arm_regsets[] = {
 		.n = sizeof(struct user_vfp) / sizeof(long),
 		.size = sizeof(long), .align = sizeof(long),
 		.get = vfp_get, .set = vfp_set
+	},
+#endif
+#ifdef CONFIG_IWMMXT
+	[REGSET_IWMMXT] = {
+		.n = sizeof(struct iwmmxt_struct) / sizeof(int),
+		.size = sizeof(int), .align = sizeof(int),
+		.active = iwmmxt_active, .get = iwmmxt_get, .set = iwmmxt_set
 	},
 #endif
 };
@@ -1260,12 +1282,14 @@ long arch_ptrace(struct task_struct *child, long request,
 
 #ifdef CONFIG_IWMMXT
 	case PTRACE_GETWMMXREGS:
-		ret = ptrace_getwmmxregs(child, datap);
-		break;
+		return copy_regset_to_user(child, &user_arm_view,
+					   REGSET_IWMMXT,
+					   0, IWMMXT_SIZE, datap);
 
 	case PTRACE_SETWMMXREGS:
-		ret = ptrace_setwmmxregs(child, datap);
-		break;
+		return copy_regset_from_user(child, &user_arm_view,
+					     REGSET_IWMMXT,
+					     0, IWMMXT_SIZE, datap);
 #endif
 
 	case PTRACE_GET_THREAD_AREA:
