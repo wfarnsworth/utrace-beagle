@@ -860,49 +860,98 @@ static int ptrace_setcrunchregs(struct task_struct *tsk, void __user *ufp)
 /*
  * Get the child VFP state.
  */
-static int ptrace_getvfpregs(struct task_struct *tsk, void __user *data)
+static int vfp_get(struct task_struct *target,
+		   const struct user_regset *regset,
+		   unsigned int pos, unsigned int count,
+		   void *kbuf, void __user *ubuf)
 {
-	struct thread_info *thread = task_thread_info(tsk);
+	struct thread_info *thread = task_thread_info(target);
 	union vfp_state *vfp = &thread->vfpstate;
-	struct user_vfp __user *ufp = data;
+	u32 *fpscr = &vfp->hard.fpscr;
+	int ret;
 
 	vfp_sync_hwstate(thread);
 
 	/* copy the floating point registers */
-	if (copy_to_user(&ufp->fpregs, &vfp->hard.fpregs,
-			 sizeof(vfp->hard.fpregs)))
-		return -EFAULT;
+	ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf, &vfp->hard.fpregs,
+				  0, sizeof(vfp->hard.fpregs));
+	if (!ret && sizeof(vfp->hard.fpregs) < offsetof(struct user_vfp, fpscr))
+		/*
+		 * When we don't support all the VFP registers in the
+		 * regset format, fill the rest with zero.
+		 */
+		ret = user_regset_copyout_zero(
+			&pos, &count, &kbuf, &ubuf,
+			sizeof(vfp->hard.fpregs),
+			offsetof(struct user_vfp, fpscr));
 
 	/* copy the status and control register */
-	if (put_user(vfp->hard.fpscr, &ufp->fpscr))
-		return -EFAULT;
+	if (!ret)
+		ret = user_regset_copyout(
+			&pos, &count, &kbuf, &ubuf, fpscr,
+			offsetof(struct user_vfp, fpscr),
+			offsetof(struct user_vfp, fpscr) + sizeof(*fpscr));
 
-	return 0;
+	/*
+	 * Fill the alignment padding at the end of struct user_vfp.
+	 */
+	if (!ret)
+		ret = user_regset_copyout_zero(
+			&pos, &count, &kbuf, &ubuf,
+			offsetof(struct user_vfp, fpscr),
+			offsetof(struct user_vfp, fpscr) + sizeof(*fpscr));
+
+	return ret;
 }
 
 /*
  * Set the child VFP state.
  */
-static int ptrace_setvfpregs(struct task_struct *tsk, void __user *data)
+static int vfp_set(struct task_struct *target,
+		   const struct user_regset *regset,
+		   unsigned int pos, unsigned int count,
+		   const void *kbuf, const void __user *ubuf)
 {
-	struct thread_info *thread = task_thread_info(tsk);
+	struct thread_info *thread = task_thread_info(target);
 	union vfp_state *vfp = &thread->vfpstate;
-	struct user_vfp __user *ufp = data;
+	u32 *fpscr = &vfp->hard.fpscr;
+	int ret;
 
 	vfp_sync_hwstate(thread);
 
 	/* copy the floating point registers */
-	if (copy_from_user(&vfp->hard.fpregs, &ufp->fpregs,
-			   sizeof(vfp->hard.fpregs)))
-		return -EFAULT;
+	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf, &vfp->hard.fpregs,
+				 0, sizeof(vfp->hard.fpregs));
+	if (!ret && sizeof(vfp->hard.fpregs) < offsetof(struct user_vfp, fpscr))
+		/*
+		 * When we don't support all the VFP registers in the
+		 * regset format, ignore the rest.
+		 */
+		ret = user_regset_copyin_ignore(
+			&pos, &count, &kbuf, &ubuf,
+			sizeof(vfp->hard.fpregs),
+			offsetof(struct user_vfp, fpscr));
 
 	/* copy the status and control register */
-	if (get_user(vfp->hard.fpscr, &ufp->fpscr))
-		return -EFAULT;
+	if (!ret)
+		ret = user_regset_copyin(
+			&pos, &count, &kbuf, &ubuf, fpscr,
+			offsetof(struct user_vfp, fpscr),
+			offsetof(struct user_vfp, fpscr) + sizeof(*fpscr));
 
-	vfp_flush_hwstate(thread);
+	/*
+	 * Ignore the alignment padding at the end of struct user_vfp.
+	 */
+	if (!ret)
+		ret = user_regset_copyin_ignore(
+			&pos, &count, &kbuf, &ubuf,
+			offsetof(struct user_vfp, fpscr) + sizeof(*fpscr),
+			sizeof(struct user_vfp));
 
-	return 0;
+	if (!ret)
+		vfp_flush_hwstate(thread);
+
+	return ret;
 }
 #endif
 
@@ -915,6 +964,9 @@ static int ptrace_setvfpregs(struct task_struct *tsk, void __user *data)
 enum {
 	REGSET_GPR,
 	REGSET_FP,
+#ifdef CONFIG_VFP
+	REGSET_VFP,
+#endif
 };
 
 static const struct user_regset arm_regsets[] = {
@@ -929,6 +981,13 @@ static const struct user_regset arm_regsets[] = {
 		.size = sizeof(long), .align = sizeof(long),
 		.active = user_fp_active, .get = user_fp_get, .set = user_fp_set
 	},
+#ifdef CONFIG_VFP
+	[REGSET_VFP] = {
+		.n = sizeof(struct user_vfp) / sizeof(long),
+		.size = sizeof(long), .align = sizeof(long),
+		.get = vfp_get, .set = vfp_set
+	},
+#endif
 };
 
 static const struct user_regset_view user_arm_view = {
@@ -1230,12 +1289,12 @@ long arch_ptrace(struct task_struct *child, long request,
 
 #ifdef CONFIG_VFP
 	case PTRACE_GETVFPREGS:
-		ret = ptrace_getvfpregs(child, datap);
-		break;
+		return copy_regset_to_user(child, &user_arm_view, REGSET_VFP,
+					   0, sizeof(struct pt_regs), datap);
 
 	case PTRACE_SETVFPREGS:
-		ret = ptrace_setvfpregs(child, datap);
-		break;
+		return copy_regset_from_user(child, &user_arm_view, REGSET_VFP,
+					     0, sizeof(struct pt_regs), datap);
 #endif
 
 #ifdef CONFIG_HAVE_HW_BREAKPOINT
