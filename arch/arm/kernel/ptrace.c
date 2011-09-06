@@ -798,6 +798,37 @@ static int user_fp_set(struct task_struct *target,
 				  &thread->fpstate, 0, sizeof(struct user_fp));
 }
 
+/*
+ * Fetch the thread pointer as a regset of its own.
+ * It's considered "active" (i.e. worth dumping) if it's nonzero.
+ */
+
+static int tp_get(struct task_struct *target,
+		  const struct user_regset *regset,
+		  unsigned int pos, unsigned int count,
+		  void *kbuf, void __user *ubuf)
+{
+	return user_regset_copyout(&pos, &count, &kbuf, &ubuf,
+				   &task_thread_info(target)->tp_value,
+				   0, sizeof(unsigned long));
+}
+
+static int tp_set(struct task_struct *target,
+		  const struct user_regset *regset,
+		  unsigned int pos, unsigned int count,
+		  const void *kbuf, const void __user *ubuf)
+{
+	return user_regset_copyin(&pos, &count, &kbuf, &ubuf,
+				  &task_thread_info(target)->tp_value,
+				  0, sizeof(unsigned long));
+}
+
+static int tp_active(struct task_struct *target,
+		     const struct user_regset *regset)
+{
+	return task_thread_info(target)->tp_value == 0 ? 0 : 1;
+}
+
 #ifdef CONFIG_IWMMXT
 
 /*
@@ -984,6 +1015,7 @@ static int vfp_set(struct task_struct *target,
 enum {
 	REGSET_GPR,
 	REGSET_FP,
+	REGSET_TP,
 #ifdef CONFIG_VFP
 	REGSET_VFP,
 #endif
@@ -1006,6 +1038,11 @@ static const struct user_regset arm_regsets[] = {
 		.n = sizeof(struct user_fp) / sizeof(long),
 		.size = sizeof(long), .align = sizeof(long),
 		.active = user_fp_active, .get = user_fp_get, .set = user_fp_set
+	},
+	[REGSET_TP] = {
+		.core_note_type = NT_ARM_TP,
+		.size = sizeof(long), .align = sizeof(long), .n = 1,
+		.active = tp_active, .get = tp_get, .set = tp_set
 	},
 #ifdef CONFIG_VFP
 	[REGSET_VFP] = {

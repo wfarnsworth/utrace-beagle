@@ -397,6 +397,7 @@ typedef struct elf64_shdr {
 #define NT_S390_LAST_BREAK	0x306	/* s390 breaking event address */
 #define NT_ARM_WMMX	0x400		/* ARM iWMMXt registers */
 #define NT_ARM_CRUNCH	0x401		/* ARM Crunch registers */
+#define NT_ARM_TP	0x402		/* ARM thread pointer */
 
 
 /* Note header in a PT_NOTE section */
