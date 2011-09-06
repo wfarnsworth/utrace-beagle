@@ -184,7 +184,8 @@ static inline int valid_user_regs(struct pt_regs *regs)
 	return 0;
 }
 
-#define instruction_pointer(regs)	(regs)->ARM_pc
+#define instruction_pointer(regs)	((regs)->ARM_pc)
+#define user_stack_pointer(regs)	((regs)->ARM_sp)
 
 #ifdef CONFIG_SMP
 extern unsigned long profile_pc(struct pt_regs *regs);
@@ -236,4 +237,3 @@ static inline unsigned long kernel_stack_pointer(struct pt_regs *regs)
 #endif /* __ASSEMBLY__ */
 
 #endif
-
