@@ -1025,6 +1025,7 @@ static const struct user_regset arm_regsets[] = {
 #endif
 #ifdef CONFIG_CRUNCH
 	[REGSET_CRUNCH] = {
+		.core_note_type = NT_ARM_CRUNCH,
 		.n = sizeof(struct crunch_state) / sizeof(int),
 		.size = sizeof(int), .align = sizeof(int),
 		.get = crunch_get, .set = crunch_set
