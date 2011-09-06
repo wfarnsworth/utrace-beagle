@@ -983,6 +983,7 @@ static const struct user_regset arm_regsets[] = {
 	},
 #ifdef CONFIG_VFP
 	[REGSET_VFP] = {
+		.core_note_type = NT_PRXFPREG,
 		.n = sizeof(struct user_vfp) / sizeof(long),
 		.size = sizeof(long), .align = sizeof(long),
 		.get = vfp_get, .set = vfp_set
