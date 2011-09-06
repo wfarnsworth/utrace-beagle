@@ -15,6 +15,8 @@
 #include <linux/smp.h>
 #include <linux/ptrace.h>
 #include <linux/tracehook.h>
+#include <linux/regset.h>
+#include <linux/elf.h>
 #include <linux/user.h>
 #include <linux/security.h>
 #include <linux/init.h>
@@ -722,30 +724,38 @@ static int ptrace_write_user(struct task_struct *tsk, unsigned long off,
 /*
  * Get all user integer registers.
  */
-static int ptrace_getregs(struct task_struct *tsk, void __user *uregs)
+static int gpr_get(struct task_struct *target,
+		   const struct user_regset *regset,
+		   unsigned int pos, unsigned int count,
+		   void *kbuf, void __user *ubuf)
 {
-	struct pt_regs *regs = task_pt_regs(tsk);
-
-	return copy_to_user(uregs, regs, sizeof(struct pt_regs)) ? -EFAULT : 0;
+	struct pt_regs *regs = task_pt_regs(target);
+	return user_regset_copyout(&pos, &count, &kbuf, &ubuf,
+				   regs, 0, sizeof(*regs));
 }
 
 /*
  * Set all user integer registers.
  */
-static int ptrace_setregs(struct task_struct *tsk, void __user *uregs)
+static int gpr_set(struct task_struct *target,
+		   const struct user_regset *regset,
+		   unsigned int pos, unsigned int count,
+		   const void *kbuf, const void __user *ubuf)
 {
+	struct pt_regs *regs = task_pt_regs(target);
 	struct pt_regs newregs;
 	int ret;
 
-	ret = -EFAULT;
-	if (copy_from_user(&newregs, uregs, sizeof(struct pt_regs)) == 0) {
-		struct pt_regs *regs = task_pt_regs(tsk);
+	if (pos != 0 || count != sizeof(newregs))
+		newregs = *regs;
 
-		ret = -EINVAL;
-		if (valid_user_regs(&newregs)) {
+	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
+				 &newregs, 0, sizeof(newregs));
+	if (!ret) {
+		if (valid_user_regs(&newregs))
 			*regs = newregs;
-			ret = 0;
-		}
+		else
+			ret = -EINVAL;
 	}
 
 	return ret;
@@ -878,6 +888,34 @@ static int ptrace_setvfpregs(struct task_struct *tsk, void __user *data)
 	return 0;
 }
 #endif
+
+/*
+ * Indices in arm_regsets[] array.  These are used only in arch_ptrace(),
+ * below.  The ordering that matters is that the NT_PRSTATUS regset is
+ * first.  Other than that, ever use outside this file should just look at
+ * the contents of the table entries.
+ */
+enum {
+	REGSET_GPR,
+};
+
+static const struct user_regset arm_regsets[] = {
+	[REGSET_GPR] = {
+		.core_note_type = NT_PRSTATUS, .n = ELF_NGREG,
+		.size = sizeof(long), .align = sizeof(long),
+		.get = gpr_get, .set = gpr_set
+	},
+};
+
+static const struct user_regset_view user_arm_view = {
+	.name = "arm", .e_machine = ELF_ARCH, .ei_osabi = ELF_OSABI,
+	.regsets = arm_regsets, .n = ARRAY_SIZE(arm_regsets)
+};
+
+const struct user_regset_view *task_user_regset_view(struct task_struct *task)
+{
+	return &user_arm_view;
+}
 
 #ifdef CONFIG_HAVE_HW_BREAKPOINT
 /*
@@ -1121,12 +1159,12 @@ long arch_ptrace(struct task_struct *child, long request,
 		break;
 
 	case PTRACE_GETREGS:
-		ret = ptrace_getregs(child, datap);
-		break;
+		return copy_regset_to_user(child, &user_arm_view, REGSET_GPR,
+					   0, sizeof(struct pt_regs), datap);
 
 	case PTRACE_SETREGS:
-		ret = ptrace_setregs(child, datap);
-		break;
+		return copy_regset_from_user(child, &user_arm_view, REGSET_GPR,
+					     0, sizeof(struct pt_regs), datap);
 
 	case PTRACE_GETFPREGS:
 		ret = ptrace_getfpregs(child, datap);
