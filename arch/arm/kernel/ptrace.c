@@ -764,21 +764,38 @@ static int gpr_set(struct task_struct *target,
 /*
  * Get the child FPU state.
  */
-static int ptrace_getfpregs(struct task_struct *tsk, void __user *ufp)
+static int user_fp_get(struct task_struct *target,
+		       const struct user_regset *regset,
+		       unsigned int pos, unsigned int count,
+		       void *kbuf, void __user *ubuf)
 {
-	return copy_to_user(ufp, &task_thread_info(tsk)->fpstate,
-			    sizeof(struct user_fp)) ? -EFAULT : 0;
+	return user_regset_copyout(&pos, &count, &kbuf, &ubuf,
+				   &task_thread_info(target)->fpstate,
+				   0, sizeof(struct user_fp));
+}
+
+/*
+ * Decide if the FPU state is interesting enough to look at or dump.
+ */
+static int user_fp_active(struct task_struct *target,
+			  const struct user_regset *regset)
+{
+	struct thread_info *thread = task_thread_info(target);
+	return (thread->used_cp[1] || thread->used_cp[2]) ? regset->n : 0;
 }
 
 /*
  * Set the child FPU state.
  */
-static int ptrace_setfpregs(struct task_struct *tsk, void __user *ufp)
+static int user_fp_set(struct task_struct *target,
+		       const struct user_regset *regset,
+		       unsigned int pos, unsigned int count,
+		       const void *kbuf, const void __user *ubuf)
 {
-	struct thread_info *thread = task_thread_info(tsk);
+	struct thread_info *thread = task_thread_info(target);
 	thread->used_cp[1] = thread->used_cp[2] = 1;
-	return copy_from_user(&thread->fpstate, ufp,
-			      sizeof(struct user_fp)) ? -EFAULT : 0;
+	return user_regset_copyin(&pos, &count, &kbuf, &ubuf,
+				  &thread->fpstate, 0, sizeof(struct user_fp));
 }
 
 #ifdef CONFIG_IWMMXT
@@ -897,6 +914,7 @@ static int ptrace_setvfpregs(struct task_struct *tsk, void __user *data)
  */
 enum {
 	REGSET_GPR,
+	REGSET_FP,
 };
 
 static const struct user_regset arm_regsets[] = {
@@ -904,6 +922,12 @@ static const struct user_regset arm_regsets[] = {
 		.core_note_type = NT_PRSTATUS, .n = ELF_NGREG,
 		.size = sizeof(long), .align = sizeof(long),
 		.get = gpr_get, .set = gpr_set
+	},
+	[REGSET_FP] = {
+		.core_note_type = NT_PRFPREG,
+		.n = sizeof(struct user_fp) / sizeof(long),
+		.size = sizeof(long), .align = sizeof(long),
+		.active = user_fp_active, .get = user_fp_get, .set = user_fp_set
 	},
 };
 
@@ -1167,12 +1191,12 @@ long arch_ptrace(struct task_struct *child, long request,
 					     0, sizeof(struct pt_regs), datap);
 
 	case PTRACE_GETFPREGS:
-		ret = ptrace_getfpregs(child, datap);
-		break;
+		return copy_regset_to_user(child, &user_arm_view, REGSET_FP,
+					   0, sizeof(struct user_fp), datap);
 		
 	case PTRACE_SETFPREGS:
-		ret = ptrace_setfpregs(child, datap);
-		break;
+		return copy_regset_from_user(child, &user_arm_view, REGSET_FP,
+					     0, sizeof(struct user_fp), datap);
 
 #ifdef CONFIG_IWMMXT
 	case PTRACE_GETWMMXREGS:
