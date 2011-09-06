@@ -1006,6 +1006,7 @@ static const struct user_regset arm_regsets[] = {
 #endif
 #ifdef CONFIG_IWMMXT
 	[REGSET_IWMMXT] = {
+		.core_note_type = NT_ARM_WMMX,
 		.n = sizeof(struct iwmmxt_struct) / sizeof(int),
 		.size = sizeof(int), .align = sizeof(int),
 		.active = iwmmxt_active, .get = iwmmxt_get, .set = iwmmxt_set
